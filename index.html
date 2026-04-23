@@ -6,9 +6,117 @@
 <title>แบบทดสอบ HR AI — Prompt & Application</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;600;700&display=swap" rel="stylesheet">
 <!-- Libraries -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+// 🔥 Global anti-cheat for desktop + mobile
+['copy','paste','cut'].forEach(function(evt){
+  document.addEventListener(evt, function(e){
+    var el = document.activeElement;
+    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
+      e.preventDefault();
+      showCheatWarning();
+      return false;
+    }
+  });
+});
+
+document.addEventListener('keydown', function(e){
+  var k = (e.key || '').toLowerCase();
+  if((e.ctrlKey || e.metaKey) && ['v','c','x','a'].includes(k)){
+    var el = document.activeElement;
+    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
+      e.preventDefault();
+      showCheatWarning();
+      return false;
+    }
+  }
+});
+
+document.addEventListener('beforeinput', function(e){
+  if(e && e.inputType && ['insertFromPaste','insertFromDrop','deleteByCut'].includes(e.inputType)){
+    var el = document.activeElement;
+    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
+      e.preventDefault();
+      showCheatWarning();
+      return false;
+    }
+  }
+});
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js">
+// 🔥 Global anti-cheat for desktop + mobile
+['copy','paste','cut'].forEach(function(evt){
+  document.addEventListener(evt, function(e){
+    var el = document.activeElement;
+    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
+      e.preventDefault();
+      showCheatWarning();
+      return false;
+    }
+  });
+});
+
+document.addEventListener('keydown', function(e){
+  var k = (e.key || '').toLowerCase();
+  if((e.ctrlKey || e.metaKey) && ['v','c','x','a'].includes(k)){
+    var el = document.activeElement;
+    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
+      e.preventDefault();
+      showCheatWarning();
+      return false;
+    }
+  }
+});
+
+document.addEventListener('beforeinput', function(e){
+  if(e && e.inputType && ['insertFromPaste','insertFromDrop','deleteByCut'].includes(e.inputType)){
+    var el = document.activeElement;
+    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
+      e.preventDefault();
+      showCheatWarning();
+      return false;
+    }
+  }
+});
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+// 🔥 Global anti-cheat for desktop + mobile
+['copy','paste','cut'].forEach(function(evt){
+  document.addEventListener(evt, function(e){
+    var el = document.activeElement;
+    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
+      e.preventDefault();
+      showCheatWarning();
+      return false;
+    }
+  });
+});
+
+document.addEventListener('keydown', function(e){
+  var k = (e.key || '').toLowerCase();
+  if((e.ctrlKey || e.metaKey) && ['v','c','x','a'].includes(k)){
+    var el = document.activeElement;
+    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
+      e.preventDefault();
+      showCheatWarning();
+      return false;
+    }
+  }
+});
+
+document.addEventListener('beforeinput', function(e){
+  if(e && e.inputType && ['insertFromPaste','insertFromDrop','deleteByCut'].includes(e.inputType)){
+    var el = document.activeElement;
+    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
+      e.preventDefault();
+      showCheatWarning();
+      return false;
+    }
+  }
+});
+
+</script>
 <style>
 :root{
   --bg:#0b1622;--surface:#13263d;--surface2:#1c334d;
@@ -466,6 +574,7 @@ window.addEventListener('DOMContentLoaded', function(){
 
   startTimer();
   loadRecords();
+  loadRecordsFromDB();
 });
 
 /* ══════════════════════════════════════
@@ -482,6 +591,49 @@ async function loadRecords(){
 
 async function saveRecords(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(allRecords)); }catch(e){}
+}
+
+async function loadRecordsFromDB(){
+  try{
+    var res = await fetch(WORKER_URL, { method:'GET' });
+    var payload = await res.json();
+
+    var rows = [];
+    if(Array.isArray(payload)){
+      rows = payload;
+    } else if(payload && Array.isArray(payload.data)){
+      rows = payload.data;
+    } else if(payload && Array.isArray(payload.results)){
+      rows = payload.results;
+    } else {
+      return;
+    }
+
+    allRecords = rows.map(function(r, idx){
+      return {
+        id: r.id || ('db-' + idx + '-' + Date.now()),
+        date: r.created_at || r.date || '',
+        fname: r.fname || '',
+        lname: r.lname || '',
+        dept: r.dept || '',
+        company: r.company || '',
+        totalScore: Number(r.total_score != null ? r.total_score : r.totalScore || 0),
+        level: r.level || '',
+        levelEn: r.levelEn || r.level_en || '',
+        prompt: Number(r.prompt_score != null ? r.prompt_score : r.prompt || 0),
+        application: Number(r.application_score != null ? r.application_score : r.application || 0),
+        analysis: Number(r.analysis_score != null ? r.analysis_score : r.analysis || 0),
+        impact: Number(r.impact_score != null ? r.impact_score : r.impact || 0),
+        timeUsed: r.time_used || r.timeUsed || '',
+        timeUsedSecs: Number(r.time_used_secs || r.timeUsedSecs || 0),
+        isAuto: Boolean(r.is_auto != null ? r.is_auto : r.isAuto)
+      };
+    });
+
+    renderRecordsTable();
+  } catch(e){
+    console.log('loadRecordsFromDB error', e);
+  }
 }
 
 function clearRecords(){
@@ -712,6 +864,33 @@ async function doSubmit(isAuto){
     };
     allRecords.unshift(rec);
     await saveRecords();
+
+    try{
+      await fetch(WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          action: 'save_result',
+          fname: fname,
+          lname: lname,
+          dept: dept,
+          company: company,
+          prompt: rec.prompt,
+          application: rec.application,
+          analysis: rec.analysis,
+          impact: rec.impact,
+          totalScore: rec.totalScore,
+          level: rec.level,
+          levelEn: rec.levelEn,
+          timeUsed: rec.timeUsed,
+          timeUsedSecs: rec.timeUsedSecs,
+          isAuto: rec.isAuto
+        })
+      });
+      await loadRecordsFromDB();
+    }catch(dbErr){
+      console.log('save DB error', dbErr);
+    }
 
     renderResult(result, fname, lname, dept, company, isAuto);
     renderRecordsTable();
@@ -1042,6 +1221,42 @@ function doRetry(){
   clearInterval(timerInterval); startTimer();
   renderRecordsTable();
 }
+
+// 🔥 Global anti-cheat for desktop + mobile
+['copy','paste','cut'].forEach(function(evt){
+  document.addEventListener(evt, function(e){
+    var el = document.activeElement;
+    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
+      e.preventDefault();
+      showCheatWarning();
+      return false;
+    }
+  });
+});
+
+document.addEventListener('keydown', function(e){
+  var k = (e.key || '').toLowerCase();
+  if((e.ctrlKey || e.metaKey) && ['v','c','x','a'].includes(k)){
+    var el = document.activeElement;
+    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
+      e.preventDefault();
+      showCheatWarning();
+      return false;
+    }
+  }
+});
+
+document.addEventListener('beforeinput', function(e){
+  if(e && e.inputType && ['insertFromPaste','insertFromDrop','deleteByCut'].includes(e.inputType)){
+    var el = document.activeElement;
+    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
+      e.preventDefault();
+      showCheatWarning();
+      return false;
+    }
+  }
+});
+
 </script>
 
 <!-- CLEAR RECORDS MODAL -->

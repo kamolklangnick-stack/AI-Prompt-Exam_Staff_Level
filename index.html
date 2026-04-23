@@ -424,30 +424,46 @@ var STORAGE_KEY = 'hr_exam_records';
    INIT
 ══════════════════════════════════════ */
 window.addEventListener('DOMContentLoaded', function(){
+  updateTimerDisplay();
+  refreshProgress();
+
   for(var i=1;i<=5;i++){
     (function(n){
       var ta = document.getElementById('a'+n);
+      if(!ta) return;
       ta.addEventListener('input', function(){ handleInput(n); });
-      ta.addEventListener('paste', blockCheatAction);
-      ta.addEventListener('drop', blockCheatAction);
-      ta.addEventListener('copy', blockCheatAction);
-      ta.addEventListener('cut', blockCheatAction);
-      ta.addEventListener('contextmenu', blockCheatAction);
+
+      function blockCheat(e){
+        e.preventDefault();
+        showCheatWarning();
+        return false;
+      }
+
+      ta.addEventListener('paste', blockCheat);
+      ta.addEventListener('copy', blockCheat);
+      ta.addEventListener('cut', blockCheat);
+      ta.addEventListener('drop', blockCheat);
+      ta.addEventListener('contextmenu', function(e){
+        e.preventDefault();
+      });
       ta.addEventListener('keydown', function(e){
-        var key = (e.key || '').toLowerCase();
-        if ((e.ctrlKey || e.metaKey) && ['c','v','x','insert'].indexOf(key) !== -1) {
-          blockCheatAction(e);
-          return;
-        }
-        if (e.shiftKey && key === 'insert') {
-          blockCheatAction(e);
-          return;
+        if((e.ctrlKey || e.metaKey) && ['v','c','x','a'].includes((e.key||'').toLowerCase())){
+          blockCheat(e);
         }
       });
     })(i);
   }
-  document.getElementById('submitBtn').addEventListener('click', function(){ doSubmit(false); });
-  document.getElementById('popupOkBtn').addEventListener('click', onPopupOk);
+
+  var submitBtn = document.getElementById('submitBtn');
+  if(submitBtn){
+    submitBtn.addEventListener('click', function(){ doSubmit(false); });
+  }
+
+  var popupOkBtn = document.getElementById('popupOkBtn');
+  if(popupOkBtn){
+    popupOkBtn.addEventListener('click', onPopupOk);
+  }
+
   startTimer();
   loadRecords();
 });
@@ -465,10 +481,7 @@ async function loadRecords(){
 }
 
 async function saveRecords(){
-  try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(allRecords));
-  } catch(e){}
-}
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(allRecords)); }catch(e){}
 }
 
 function clearRecords(){
@@ -649,65 +662,45 @@ async function doSubmit(isAuto){
 '
     + '{"totalScore":<number>,"level":"<ภาษาไทย>","levelEn":"<Excellent|Good|Satisfactory|Needs Improvement>","emoji":"<emoji>","summary":"<สรุป 2-3 ประโยคภาษาไทย>","dimensions":{"prompt":<0-25>,"application":<0-20>,"analysis":<0-40>,"impact":<0-15>},"questions":[{"num":1,"score":<number>,"maxScore":25,"feedback":"<2 ประโยคภาษาไทย>"},{"num":2,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":3,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":4,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":5,"score":<number>,"maxScore":15,"feedback":"<2 ประโยคภาษาไทย>"}],"strengths":"<จุดเด่น 1-2 ข้อภาษาไทย>","improvements":"<สิ่งที่ควรพัฒนา 1-2 ข้อภาษาไทย>"}';
 
-  async function callWorkerWithRetry(payload, maxAttempts){
-    var lastError = null;
-    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        var resp = await fetch(WORKER_URL, {
-          method : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body   : JSON.stringify(payload)
-        });
-
-        var data = null;
-        try { data = await resp.json(); } catch(_) { data = null; }
-
-        if (!resp.ok || (data && data.ok === false)) {
-          var errText = data && (data.error || (data.raw && data.raw.error && data.raw.error.message))
-            ? (data.error || data.raw.error.message)
-            : ('HTTP ' + resp.status);
-          lastError = new Error(errText);
-
-          var isRetryable = resp.status === 503 || /high demand|unavailable|temporarily|try again later/i.test(errText || '');
-          if (isRetryable && attempt < maxAttempts) {
-            subEl.textContent = 'AI กำลังมีผู้ใช้งานจำนวนมาก ระบบจะลองใหม่อัตโนมัติ (' + attempt + '/' + maxAttempts + ')';
-            await new Promise(function(resolve){ setTimeout(resolve, 2000 * attempt); });
-            continue;
-          }
-          throw lastError;
-        }
-
-        return data;
-      } catch(err) {
-        lastError = err;
-        if (attempt < maxAttempts) {
-          subEl.textContent = 'กำลังลองเชื่อมต่อใหม่อัตโนมัติ (' + attempt + '/' + maxAttempts + ')';
-          await new Promise(function(resolve){ setTimeout(resolve, 1500 * attempt); });
+  async function fetchWithRetry(url, options, retries){
+    var lastErr = null;
+    for(var attempt=0; attempt<=retries; attempt++){
+      try{
+        var res = await fetch(url, options);
+        if(res.status === 503 && attempt < retries){
+          await new Promise(function(resolve){ setTimeout(resolve, 1500 * (attempt + 1)); });
           continue;
         }
-        throw lastError;
+        return res;
+      } catch(err){
+        lastErr = err;
+        if(attempt < retries){
+          await new Promise(function(resolve){ setTimeout(resolve, 1000 * (attempt + 1)); });
+          continue;
+        }
       }
     }
-    throw lastError || new Error('ไม่สามารถเชื่อมต่อ AI ได้');
+    throw lastErr || new Error('Network error');
   }
 
   try {
-    var data = await callWorkerWithRetry({ prompt: userContent }, 3);
+    var resp = await fetchWithRetry(WORKER_URL, {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ prompt: userContent })
+    }, 2);
+
     clearInterval(ivl);
 
-    var raw = '';
-    if (typeof data.text === 'string' && data.text.trim()) {
-      raw = data.text.trim();
-    } else if (data.raw && data.raw.candidates && data.raw.candidates[0] && data.raw.candidates[0].content && Array.isArray(data.raw.candidates[0].content.parts)) {
-      data.raw.candidates[0].content.parts.forEach(function(p){
-        if (typeof p.text === 'string') raw += p.text;
-      });
-      raw = raw.trim();
+    var data = await resp.json();
+    if (!resp.ok) {
+      throw new Error('HTTP ' + resp.status + ': ' + JSON.stringify(data));
     }
+    if (data.error) throw new Error(data.error);
+    if (data.ok === false) throw new Error(data.error || 'Worker returned error');
 
-    if (!raw) {
-      throw new Error('AI ไม่ส่งข้อความกลับมา กรุณาลองใหม่อีกครั้ง');
-    }
+    var raw = (typeof data.text === 'string' ? data.text : '').trim();
+    if (!raw) throw new Error('AI ไม่ส่งข้อความกลับมา กรุณาลองใหม่');
 
     var clean = raw.replace(/```json/gi,'').replace(/```/g,'').trim();
     var j0 = clean.indexOf('{'), j1 = clean.lastIndexOf('}');
@@ -747,32 +740,29 @@ async function doSubmit(isAuto){
   } catch(e) {
     clearInterval(ivl);
     var errMsg = (e && e.message) ? e.message : String(e);
-    if (/high demand|unavailable|try again later/i.test(errMsg)) {
-      errMsg = 'Gemini กำลังมีผู้ใช้งานจำนวนมากชั่วคราว กรุณาลองใหม่อีกครั้งในอีกสักครู่';
-    }
     document.getElementById('ov-err-msg').textContent = errMsg;
     document.getElementById('ov-loading').style.display = 'none';
     document.getElementById('ov-error').style.display   = 'block';
     submitTriggered = false;
+    if(!timerExpired){
+      clearInterval(timerInterval);
+      startTimer();
+    }
   }
-}
-
-function blockCheatAction(e){
-  if (e) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-  showCheatWarning();
 }
 
 function showCheatWarning(){
   var modal = document.getElementById('cheat-modal');
-  if (modal) modal.style.display = 'flex';
+  var msg = 'คุณกำลังดำเนินการทุจริตในการทำแบบทดสอบ กรุณาใช้ความรู้ ความสามารถตัวเองในการทำแบบทดสอบ ด้วยความเคารพ!';
+  var target = document.getElementById('cheat-message');
+  if(target) target.textContent = msg;
+  if(modal) modal.style.display = 'flex';
+  else alert(msg);
 }
 
 function closeCheatModal(){
   var modal = document.getElementById('cheat-modal');
-  if (modal) modal.style.display = 'none';
+  if(modal) modal.style.display = 'none';
 }
 
 function retrySubmit(){
@@ -1099,7 +1089,11 @@ function doRetry(){
   <div style="background:#1c334d;border:2px solid rgba(248,113,113,.5);border-radius:20px;padding:40px 32px;max-width:420px;width:92%;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);animation:shake .35s ease;">
     <div style="font-size:54px;margin-bottom:14px;">🚫</div>
     <div style="font-family:'Noto Serif Thai',serif;font-size:20px;font-weight:700;color:#f87171;margin-bottom:16px;line-height:1.4;">ข้อความแจ้งเตือน!</div>
-    <div style="font-size:14.5px;color:#eef4ff;line-height:1.85;margin-bottom:26px;">คุณกำลังดำเนินการทุจริตในการทำแบบทดสอบ กรุณาใช้ความรู้ ความสามารถตัวเองในการทำแบบทดสอบ ด้วยความเคารพ!</div>
+    <div style="font-size:14.5px;color:#eef4ff;line-height:1.85;margin-bottom:26px;">
+      คุณกำลังจะทุจริตการทำแบบทดสอบนี้อยู่<br>
+      กรุณาใช้ความรู้ ความสามารถตัวเองในการทำแบบทดสอบนี้<br>
+      <span style="color:#c9a84c;font-weight:700;">ด้วยความเคารพ !</span>
+    </div>
     <button onclick="closeCheatModal()"
       style="background:linear-gradient(135deg,#c9a84c,#e6c96a);color:#0b1622;border:none;padding:13px 44px;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .25s;box-shadow:0 4px 16px rgba(201,168,76,.3);">
       รับทราบ

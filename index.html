@@ -535,8 +535,8 @@ var isPaused = false;
 var timerExpired = false;
 var timeUsedSecs = 0;
 var submitTriggered = false;
+var isSubmitting = false;
 var allRecords = [];
-var STORAGE_KEY = 'hr_exam_records';
 var adminUnlocked = false;
 var ADMIN_PIN = '134300';
 
@@ -591,19 +591,6 @@ window.addEventListener('DOMContentLoaded', function(){
 /* ══════════════════════════════════════
    STORAGE
 ══════════════════════════════════════ */
-async function loadRecords(){
-  try{
-    allRecords = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  } catch(e){
-    allRecords = [];
-  }
-  renderRecordsTable();
-}
-
-async function saveRecords(){
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(allRecords)); }catch(e){}
-}
-
 async function loadRecordsFromDB(){
   try{
     var res = await fetch(WORKER_URL, { method:'GET' });
@@ -664,11 +651,26 @@ async function confirmClear(){
     document.getElementById('clear-pin-input').focus();
     return;
   }
-  closeClearModal();
-  allRecords = [];
-  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
-  renderRecordsTable();
-  showExportMsg('✅ ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว');
+
+  try{
+    const res = await fetch(WORKER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'clear_results', pin: pin })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || (data && data.ok === false)){
+      throw new Error((data && data.error) || ('HTTP ' + res.status));
+    }
+    closeClearModal();
+    allRecords = [];
+    renderRecordsTable();
+    renderAdminDashboard();
+    showExportMsg('✅ ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว');
+  }catch(e){
+    errEl.textContent = '❌ ล้างข้อมูลไม่สำเร็จ: ' + (e.message || e);
+    errEl.style.display = 'block';
+  }
 }
 
 function closeClearModal(){
@@ -732,7 +734,7 @@ function formatTimeFull(secs){
 /* ══════════════════════════════════════
    INPUT
 ══════════════════════════════════════ */
-function onInfoInput(el){ el.classList.toggle('filled', el.value.trim().length>0); }
+function onInfoInput(el){ el.classList.toggle('filled', el.value.trim().length>0); refreshProgress(); }
 function handleInput(n){
   var v=document.getElementById('a'+n).value;
   answers[n]=v;
@@ -743,11 +745,21 @@ function handleInput(n){
   refreshProgress();
 }
 function refreshProgress(){
-  var f=0; for(var i=1;i<=5;i++) if(answers[i].trim().length>0) f++;
+  var f=0; for(var i=1;i<=5;i++) if((answers[i]||'').trim().length>0) f++;
   document.getElementById('prog-txt').textContent=f+' / 5 ข้อ';
   document.getElementById('prog-fill').style.width=(f/5*100)+'%';
   document.getElementById('exam-badge').textContent=f+'/5';
-  if(!timerExpired&&!submitTriggered) document.getElementById('submitBtn').disabled=(f<5);
+
+  var infoReady = !!(
+    document.getElementById('f-fname').value.trim() &&
+    document.getElementById('f-lname').value.trim() &&
+    document.getElementById('f-dept').value.trim() &&
+    document.getElementById('f-company').value.trim()
+  );
+
+  if(!timerExpired && !submitTriggered && !isSubmitting){
+    document.getElementById('submitBtn').disabled = !(f===5 && infoReady);
+  }
 }
 
 /* ══════════════════════════════════════
@@ -763,35 +775,67 @@ function switchTab(t){
   });
 }
 
-function openAdminDashboard(){
+async function openAdminDashboard(){
   if(!adminUnlocked){
-    if(!promptAdminAccess()) return;
+    var ok = await promptAdminAccess();
+    if(!ok) return;
   }
-  renderAdminDashboard();
+  await renderAdminDashboard();
   switchTab('admin');
 }
 
-function promptAdminAccess(force){
+async function promptAdminAccess(force){
   if(force) adminUnlocked = false;
   var pin = prompt('กรอกรหัสสำหรับเข้า Dashboard ผู้บริหาร');
   if(pin === null) return false;
-  if(String(pin).trim() !== ADMIN_PIN){
-    alert('รหัสไม่ถูกต้อง');
+
+  try{
+    var res = await fetch(WORKER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'dashboard_summary', pin:String(pin).trim() })
+    });
+    var data = await res.json();
+    if(!res.ok || !data.ok){
+      throw new Error((data && data.error) || 'รหัสไม่ถูกต้อง');
+    }
+    adminUnlocked = true;
+    window.__adminPin = String(pin).trim();
+    var gate = document.getElementById('admin-gate');
+    var body = document.getElementById('admin-body');
+    if(gate) gate.style.display = 'none';
+    if(body) body.style.display = 'block';
+    return true;
+  }catch(e){
+    alert(e.message || 'รหัสไม่ถูกต้อง');
     return false;
   }
-  adminUnlocked = true;
-  var gate = document.getElementById('admin-gate');
-  var body = document.getElementById('admin-body');
-  if(gate) gate.style.display = 'none';
-  if(body) body.style.display = 'block';
-  return true;
 }
 
 /* ══════════════════════════════════════
    SUBMIT
 ══════════════════════════════════════ */
 async function doSubmit(isAuto){
-  if(submitTriggered) return;
+  if (isSubmitting || submitTriggered) return;
+
+  var fname   = document.getElementById('f-fname').value.trim();
+  var lname   = document.getElementById('f-lname').value.trim();
+  var dept    = document.getElementById('f-dept').value.trim();
+  var company = document.getElementById('f-company').value.trim();
+
+  if(!fname || !lname || !dept || !company){
+    alert('กรุณากรอกข้อมูลผู้ทดสอบให้ครบ');
+    return;
+  }
+
+  for(var i=1;i<=5;i++){
+    if(!(answers[i] || '').trim()){
+      alert('กรุณาตอบคำถามให้ครบทั้ง 5 ข้อ');
+      return;
+    }
+  }
+
+  isSubmitting = true;
   submitTriggered = true;
   clearInterval(timerInterval);
   if(!timerExpired) timeUsedSecs = TOTAL_SECS - remainSecs;
@@ -800,16 +844,12 @@ async function doSubmit(isAuto){
   document.getElementById('ov-error').style.display   = 'none';
   document.getElementById('overlay').classList.add('on');
   document.getElementById('submitBtn').disabled = true;
+  document.getElementById('btnPause').disabled = true;
 
   var msgs = ['กำลังประเมิน Prompt Writing...','กำลังวิเคราะห์ Application...','กำลังตรวจ Prompt Improvement...','กำลังวิเคราะห์ Turnover Case...','กำลังประเมิน Business Impact...','กำลังคำนวณคะแนนรวม...'];
   var si = 0;
   var subEl = document.getElementById('ov-sub');
   var ivl = setInterval(function(){ subEl.textContent = msgs[si++ % msgs.length]; }, 3000);
-
-  var fname   = document.getElementById('f-fname').value.trim()   || '-';
-  var lname   = document.getElementById('f-lname').value.trim()   || '-';
-  var dept    = document.getElementById('f-dept').value.trim()    || '-';
-  var company = document.getElementById('f-company').value.trim() || '-';
 
   var userContent = [
     'คุณเป็นผู้ตรวจข้อสอบ HR AI Assessment ระดับ Staff',
@@ -828,48 +868,25 @@ async function doSubmit(isAuto){
     'ข้อ 2: ' + (answers[2] || '(ไม่ได้ตอบ)'),
     'ข้อ 3: ' + (answers[3] || '(ไม่ได้ตอบ)'),
     'ข้อ 4: ' + (answers[4] || '(ไม่ได้ตอบ)'),
-    'ข้อ 5: ' + (answers[5] || '(ไม่ได้ตอบ)'),
-    '',
-    'ระดับ: 90-100=ดีเยี่ยม, 75-89=ดี, 60-74=พอใช้, <60=ต้องพัฒนา',
-    '',
-    'ตอบเป็น JSON เท่านั้น ห้ามมี markdown หรือข้อความอื่นนอก JSON:',
-    '{"totalScore":<number>,"level":"<ภาษาไทย>","levelEn":"<Excellent|Good|Satisfactory|Needs Improvement>","emoji":"<emoji>","summary":"<สรุป 2-3 ประโยคภาษาไทย>","dimensions":{"prompt":<0-25>,"application":<0-20>,"analysis":<0-40>,"impact":<0-15>},"questions":[{"num":1,"score":<number>,"maxScore":25,"feedback":"<2 ประโยคภาษาไทย>"},{"num":2,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":3,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":4,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":5,"score":<number>,"maxScore":15,"feedback":"<2 ประโยคภาษาไทย>"}],"strengths":"<จุดเด่น 1-2 ข้อภาษาไทย>","improvements":"<สิ่งที่ควรพัฒนา 1-2 ข้อภาษาไทย>"}'
-  ].join('\n');
-
-  async function fetchWithRetry(url, options, retries){
-    var lastErr = null;
-    for(var attempt=0; attempt<=retries; attempt++){
-      try{
-        var res = await fetch(url, options);
-        if(res.status === 503 && attempt < retries){
-          await new Promise(function(resolve){ setTimeout(resolve, 1500 * (attempt + 1)); });
-          continue;
-        }
-        return res;
-      } catch(err){
-        lastErr = err;
-        if(attempt < retries){
-          await new Promise(function(resolve){ setTimeout(resolve, 1000 * (attempt + 1)); });
-          continue;
-        }
-      }
-    }
-    throw lastErr || new Error('Network error');
-  }
+    'ข้อ 5: ' + (answers[5] || '(ไม่ได้ตอบ)')
+  ].join('
+');
 
   try {
     var resp = await fetch(WORKER_URL, {
       method : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ action: 'grade', prompt: userContent, answers: answers })
+      body   : JSON.stringify({
+        action: 'grade',
+        prompt: userContent,
+        answers: answers
+      })
     });
 
     clearInterval(ivl);
 
     var data = await resp.json();
-    if (!resp.ok) {
-      throw new Error('HTTP ' + resp.status + ': ' + JSON.stringify(data));
-    }
+    if (!resp.ok) throw new Error('HTTP ' + resp.status + ': ' + JSON.stringify(data));
     if (data.error) throw new Error(data.error);
     if (data.ok === false) throw new Error(data.error || 'Worker returned error');
 
@@ -878,57 +895,60 @@ async function doSubmit(isAuto){
 
     var clean = raw.replace(/```json/gi,'').replace(/```/g,'').trim();
     var j0 = clean.indexOf('{'), j1 = clean.lastIndexOf('}');
-    if (j0 === -1 || j1 === -1) throw new Error('ไม่พบ JSON ในคำตอบ:\n' + clean.slice(0,300));
+    if (j0 === -1 || j1 === -1) throw new Error('ไม่พบ JSON ในคำตอบ:
+' + clean.slice(0,300));
     var result = JSON.parse(clean.slice(j0, j1 + 1));
-
     if (typeof result.totalScore !== 'number') throw new Error('JSON ไม่ครบ: ขาด totalScore');
-
-    document.getElementById('overlay').classList.remove('on');
 
     var rec = {
       id: Date.now(),
-      date: new Date().toLocaleString('th-TH',{year:'2-digit',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),
-      fname: fname, lname: lname, dept: dept, company: company,
+      date: new Date().toISOString().slice(0,19).replace('T',' '),
+      fname: fname,
+      lname: lname,
+      dept: dept,
+      company: company,
       totalScore: result.totalScore,
-      level: result.level, levelEn: result.levelEn,
+      level: result.level,
+      levelEn: result.levelEn,
       prompt: (result.dimensions||{}).prompt || 0,
       application: (result.dimensions||{}).application || 0,
       analysis: (result.dimensions||{}).analysis || 0,
       impact: (result.dimensions||{}).impact || 0,
-      timeUsed: formatTimeUsed(timeUsedSecs),
+      timeUsed: formatTimeFull(timeUsedSecs),
       timeUsedSecs: timeUsedSecs,
-      isAuto: isAuto
+      isAuto: !!isAuto
     };
-    try{
-      await fetch(WORKER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({
-          action: 'save_result',
-          fname: fname,
-          lname: lname,
-          dept: dept,
-          company: company,
-          prompt: rec.prompt,
-          application: rec.application,
-          analysis: rec.analysis,
-          impact: rec.impact,
-          totalScore: rec.totalScore,
-          level: rec.level,
-          levelEn: rec.levelEn,
-          timeUsed: rec.timeUsed,
-          timeUsedSecs: rec.timeUsedSecs,
-          isAuto: rec.isAuto
-        })
-      });
-      await loadRecordsFromDB();
-      renderAdminDashboard();
-    }catch(dbErr){
-      console.log('save DB error', dbErr);
-    }
 
+    var saveResp = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        action: 'save_result',
+        fname: rec.fname,
+        lname: rec.lname,
+        dept: rec.dept,
+        company: rec.company,
+        prompt: rec.prompt,
+        application: rec.application,
+        analysis: rec.analysis,
+        impact: rec.impact,
+        totalScore: rec.totalScore,
+        level: rec.level,
+        levelEn: rec.levelEn,
+        timeUsed: rec.timeUsed,
+        isAuto: rec.isAuto
+      })
+    });
+
+    var saveData = await saveResp.json();
+    if (!saveResp.ok) throw new Error('save_result failed: HTTP ' + saveResp.status);
+    if (saveData.ok === false) throw new Error(saveData.error || 'save_result failed');
+
+    await loadRecordsFromDB();
+    renderAdminDashboard();
     renderResult(result, fname, lname, dept, company, isAuto);
-    renderRecordsTable();
+
+    document.getElementById('overlay').classList.remove('on');
     document.getElementById('btn-result').classList.remove('locked');
     document.getElementById('result-icon').textContent = '🏆';
     document.getElementById('records-divider').style.display = '';
@@ -942,10 +962,9 @@ async function doSubmit(isAuto){
     document.getElementById('ov-loading').style.display = 'none';
     document.getElementById('ov-error').style.display   = 'block';
     submitTriggered = false;
-    if(!timerExpired){
-      clearInterval(timerInterval);
-      startTimer();
-    }
+    document.getElementById('btnPause').disabled = false;
+  } finally {
+    isSubmitting = false;
   }
 }
 
@@ -968,6 +987,7 @@ function retrySubmit(){
   document.getElementById('ov-error').style.display   = 'none';
   document.getElementById('overlay').classList.remove('on');
   submitTriggered = false;
+  isSubmitting = false;
   document.getElementById('submitBtn').disabled = false;
 }
 
@@ -976,11 +996,9 @@ function cancelSubmit(){
   document.getElementById('ov-error').style.display   = 'none';
   document.getElementById('overlay').classList.remove('on');
   submitTriggered = false;
-  if (!timerExpired) {
-    document.getElementById('submitBtn').disabled = false;
-    clearInterval(timerInterval);
-    startTimer();
-  }
+  isSubmitting = false;
+  document.getElementById('submitBtn').disabled = false;
+  document.getElementById('btnPause').disabled = false;
 }
 
 /* ══════════════════════════════════════
@@ -1087,8 +1105,7 @@ function renderRecordsTable(){
 }
 
 
-function renderAdminDashboard(){
-  var latest = getLatestOnlyRecords(allRecords);
+async function renderAdminDashboard(){
   var gate = document.getElementById('admin-gate');
   var body = document.getElementById('admin-body');
   if(!body || !gate) return;
@@ -1100,6 +1117,36 @@ function renderAdminDashboard(){
   gate.style.display = 'none';
   body.style.display = 'block';
 
+  if(window.__adminPin){
+    try{
+      var res = await fetch(WORKER_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'dashboard_summary', pin: window.__adminPin })
+      });
+      var data = await res.json();
+      if(res.ok && data.ok && data.summary){
+        var s = data.summary;
+        setText('sum-total', s.totalParticipants || 0);
+        setText('sum-avg', s.avgScore || 0);
+        var maxScore = (s.ranking && s.ranking.length) ? s.ranking[0].totalScore : 0;
+        setText('sum-max', maxScore || 0);
+        setText('sum-risk', (s.levelCounts && s.levelCounts.needImprove) || 0);
+
+        renderRanking((s.ranking || []).map(function(r){
+          return {fname:r.fname,lname:r.lname,dept:r.dept,company:r.company,totalScore:r.totalScore,level:r.level};
+        }), true);
+        renderLevelBarsFromCounts(s.levelCounts || {});
+        renderBreakdownRows(s.companyBreakdown || [], 'company', 'company-tbody');
+        renderBreakdownRows(s.deptBreakdown || [], 'dept', 'dept-tbody');
+        return;
+      }
+    }catch(e){
+      console.log('dashboard_summary error', e);
+    }
+  }
+
+  var latest = getLatestOnlyRecords(allRecords);
   setText('sum-total', latest.length);
   var avg = latest.length ? (latest.reduce(function(s,r){ return s + Number(r.totalScore || 0); }, 0) / latest.length).toFixed(1) : '0';
   setText('sum-avg', avg);
@@ -1114,12 +1161,40 @@ function renderAdminDashboard(){
   renderBreakdown(latest, 'dept', 'dept-tbody');
 }
 
+
+function renderLevelBarsFromCounts(counts){
+  var host = document.getElementById('level-bars');
+  if(!host) return;
+  var total = (counts.excellent||0)+(counts.good||0)+(counts.satisfactory||0)+(counts.needImprove||0);
+  var items = [
+    {lbl:'ดีเยี่ยม', val:counts.excellent||0, col:'#34d399'},
+    {lbl:'ดี', val:counts.good||0, col:'#7aaaf5'},
+    {lbl:'พอใช้', val:counts.satisfactory||0, col:'#fb923c'},
+    {lbl:'ต้องพัฒนา', val:counts.needImprove||0, col:'#f87171'}
+  ];
+  host.innerHTML = items.map(function(it){
+    var pct = total ? Math.round((it.val/total)*100) : 0;
+    return '<div class="kpi-bar"><div class="kpi-bar-top"><span>'+it.lbl+'</span><strong>'+it.val+' คน · '+pct+'%</strong></div><div class="kpi-bar-track"><div class="kpi-bar-fill" style="width:'+pct+'%;background:'+it.col+'"></div></div></div>';
+  }).join('');
+}
+
+function renderBreakdownRows(rows, key, tbodyId){
+  var tbody = document.getElementById(tbodyId);
+  if(!tbody) return;
+  if(!rows.length){
+    tbody.innerHTML = '<tr><td colspan="3"><div class="no-records"><div class="ico">📭</div>ยังไม่มีข้อมูล</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(function(r){
+    return '<tr><td>'+(r[key]||'-')+'</td><td>'+(r.count||0)+'</td><td>'+(r.avgScore||0)+'</td></tr>';
+  }).join('');
+}
 function setText(id, val){
   var el = document.getElementById(id);
   if(el) el.textContent = val;
 }
 
-function renderRanking(rows){
+function renderRanking(rows, alreadyRanked){
   var tbody = document.getElementById('rank-tbody');
   var count = document.getElementById('rank-count');
   if(!tbody) return;

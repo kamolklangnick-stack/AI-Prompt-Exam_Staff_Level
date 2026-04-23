@@ -6,13 +6,15 @@ export default {
       "Access-Control-Allow-Headers": "Content-Type"
     };
 
-    // CORS preflight
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders });
+      return new Response(null, {
+        status: 204,
+        headers: corsHeaders
+      });
     }
 
     // =========================
-    // GET = โหลดประวัติจาก D1
+    // GET = โหลดประวัติผลการทดสอบจาก D1
     // =========================
     if (request.method === "GET") {
       try {
@@ -65,9 +67,6 @@ export default {
       }, 405, corsHeaders);
     }
 
-    // =========================
-    // POST = ตรวจข้อสอบ
-    // =========================
     try {
       const body = await request.json();
       const prompt = String(body.prompt || "");
@@ -76,7 +75,9 @@ export default {
       let finalResult = null;
       let source = "MOCK";
 
-      // 1) ลองใช้ Gemini ก่อน
+      // =========================
+      // ลองใช้ Gemini ก่อน
+      // =========================
       if (env && env.GEMINI_API_KEY && prompt.trim()) {
         try {
           const geminiResp = await fetch(
@@ -115,7 +116,6 @@ export default {
 
             if (aiText && aiText.trim()) {
               const parsed = safeParseAssessmentJSON(aiText);
-
               if (isValidAssessmentResult(parsed)) {
                 finalResult = parsed;
                 source = "AI";
@@ -123,25 +123,28 @@ export default {
             }
           }
         } catch (e) {
-          // ถ้า AI พัง จะไป fallback mock ต่อ
           console.log("Gemini error:", e?.message || e);
         }
       }
 
-      // 2) ถ้า AI ใช้ไม่ได้ / parse ไม่ได้ / schema ไม่ครบ → fallback mock
+      // =========================
+      // ถ้า AI ใช้ไม่ได้ → fallback mock
+      // =========================
       if (!isValidAssessmentResult(finalResult)) {
         finalResult = gradeWithStrictMock(answers);
         source = "MOCK";
       }
 
-      // 3) save DB แต่ห้ามทำให้ worker พัง
+      // =========================
+      // บันทึกลง D1
+      // =========================
       await saveToDB(env, body, finalResult, source);
 
-      // 4) ส่ง JSON object ที่หน้า index ใช้ได้ตรงๆ
+      // ✅ สำคัญ: ส่ง text กลับไปให้ index.html เดิมอ่านได้
       return jsonResponse({
         ok: true,
         source,
-        ...finalResult
+        text: JSON.stringify(finalResult)
       }, 200, corsHeaders);
 
     } catch (e) {
@@ -560,5 +563,3 @@ function summarizeStrengths(results) {
 function summarizeImprovements(results) {
   return "ควรเพิ่มรายละเอียด ความยาวของคำตอบ และใช้คำสำคัญที่เกี่ยวข้องกับโจทย์ให้ครบมากขึ้น";
 }
-
-ใช้โค้ดนี้เป็นหลักแล้วเพิ่มเติม ขอแบบโค้ดรวมทั้งหมด สมบูร

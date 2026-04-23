@@ -1,6 +1,5 @@
 export default {
   async fetch(request, env) {
-
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -11,8 +10,34 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
+    if (request.method === "GET") {
+      return new Response(JSON.stringify({ ok: true, message: "Worker is running" }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders
+        }
+      });
+    }
+
     if (request.method !== "POST") {
-      return new Response("OK", { headers: corsHeaders });
+      return new Response(JSON.stringify({ ok: false, error: "Method Not Allowed" }), {
+        status: 405,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders
+        }
+      });
+    }
+
+    if (!env || !env.GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ ok: false, error: "Missing GEMINI_API_KEY secret" }), {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders
+        }
+      });
     }
 
     try {
@@ -28,35 +53,65 @@ export default {
             "X-goog-api-key": env.GEMINI_API_KEY
           },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
+            contents: [
+              {
+                parts: [{ text: prompt }]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.2
+            }
           })
         }
       );
 
       const data = await resp.json();
 
-      let text = "";
+      if (!resp.ok) {
+        return new Response(JSON.stringify({
+          ok: false,
+          error: "Gemini API error",
+          raw: data
+        }), {
+          status: resp.status,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders
+          }
+        });
+      }
 
+      let text = "";
       if (
         data.candidates &&
         data.candidates[0] &&
         data.candidates[0].content &&
-        data.candidates[0].content.parts
+        Array.isArray(data.candidates[0].content.parts)
       ) {
-        data.candidates[0].content.parts.forEach(p => {
-          if (p.text) text += p.text;
+        data.candidates[0].content.parts.forEach(function (p) {
+          if (typeof p.text === "string") text += p.text;
         });
       }
 
-      // 🔥 FIX สำคัญ
       if (!text || !text.trim()) {
-        text = JSON.stringify(data); // fallback
+        return new Response(JSON.stringify({
+          ok: false,
+          error: "Gemini returned empty text",
+          raw: data
+        }), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders
+          }
+        });
       }
 
       return new Response(JSON.stringify({
         ok: true,
-        text: text
+        text: text.trim()
       }), {
+        status: 200,
         headers: {
           "Content-Type": "application/json",
           ...corsHeaders
@@ -66,10 +121,13 @@ export default {
     } catch (e) {
       return new Response(JSON.stringify({
         ok: false,
-        text: "ERROR: " + e.message
+        error: e.message || "Unknown error"
       }), {
         status: 500,
-        headers: corsHeaders
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders
+        }
       });
     }
   }

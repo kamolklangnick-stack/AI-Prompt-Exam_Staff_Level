@@ -402,6 +402,12 @@ textarea:disabled{opacity:.5;cursor:not-allowed;resize:none;}
 /* ══════════════════════════════════════
    STATE
 ══════════════════════════════════════ */
+/* ══ API KEY — แก้ไขตรงนี้ ══════════════════════
+   วาง Anthropic API Key ของคุณแทน YOUR_API_KEY_HERE
+   รับได้ที่ https://console.anthropic.com/settings/keys
+═══════════════════════════════════════════════ */
+var GEMINI_API_KEY = 'AIzaSyA4Oh5U011tdO8Hr3gdmPmGJRW9lmSCvs8';
+
 var answers = {1:'',2:'',3:'',4:'',5:''};
 var TOTAL_SECS = 10 * 60;
 var remainSecs = TOTAL_SECS;
@@ -617,13 +623,13 @@ async function doSubmit(isAuto){
 
   try {
     // ── Plain fetch — NO AbortSignal (not cloneable in iframe postMessage)
-    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY;
+    var resp = await fetch(geminiUrl, {
       method : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body   : JSON.stringify({
-        model     : 'claude-haiku-4-5-20251001',
-        max_tokens: 2048,
-        messages  : [{ role: 'user', content: userContent }]
+        contents: [{ parts: [{ text: userContent }] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
       })
     });
 
@@ -637,12 +643,10 @@ async function doSubmit(isAuto){
 
     var data = await resp.json();
 
-    // extract text safely
+    // extract text from Gemini response
     var raw = '';
-    if (Array.isArray(data.content)) {
-      data.content.forEach(function(b){ if (b.type === 'text') raw += b.text; });
-    }
-    if (!raw) throw new Error('AI ไม่ส่งข้อความกลับมา (content ว่างเปล่า)');
+    try { raw = data.candidates[0].content.parts[0].text; } catch(_){}
+    if (!raw) throw new Error('AI ไม่ส่งข้อความกลับมา กรุณาลองใหม่');
 
     // strip markdown fences, find outermost { }
     var clean = raw.replace(/```json/gi,'').replace(/```/g,'').trim();

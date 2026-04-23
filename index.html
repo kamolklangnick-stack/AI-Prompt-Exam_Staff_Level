@@ -3,209 +3,1061 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HR AI Assessment</title>
-
+<title>แบบทดสอบ HR AI — Prompt & Application</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;600;700&display=swap" rel="stylesheet">
-
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-/* ===== THEME ===== */
 :root{
   --bg:#0b1622;--surface:#13263d;--surface2:#1c334d;
   --border:rgba(255,255,255,0.08);
   --gold:#c9a84c;--goldL:#e6c96a;--goldPale:rgba(201,168,76,0.12);
   --white:#eef4ff;--muted:#7a8fa8;
+  --green:#34d399;--orange:#fb923c;--purple:#a78bfa;--red:#f87171;--blue:#5b8dee;
 }
-*{box-sizing:border-box}
-body{
-  margin:0;font-family:'Sarabun',sans-serif;
-  background:var(--bg);color:var(--white)
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--white);min-height:100vh;}
+
+/* ── TOPBAR ── */
+.topbar{position:sticky;top:0;z-index:90;background:rgba(11,22,34,0.97);backdrop-filter:blur(12px);border-bottom:1px solid rgba(201,168,76,0.25);}
+.topbar-inner{max-width:920px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-icon{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--gold),var(--goldL));display:flex;align-items:center;justify-content:center;font-size:18px;}
+.brand-name{font-family:'Noto Serif Thai',serif;font-size:14px;font-weight:700;color:var(--goldL);line-height:1.15;}
+.brand-sub{font-size:11px;color:var(--muted);}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.tag-staff{background:var(--goldPale);border:1px solid rgba(201,168,76,0.35);color:var(--goldL);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+
+/* ── TIMER ── */
+.timer-box{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 14px;transition:border-color .3s,background .3s;}
+.timer-box.warn{border-color:rgba(251,146,60,.5);background:rgba(251,146,60,.08);}
+.timer-box.danger{border-color:rgba(248,113,113,.6);background:rgba(248,113,113,.1);animation:pulse .8s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.timer-digits{font-family:'Noto Serif Thai',serif;font-size:18px;font-weight:700;color:var(--goldL);letter-spacing:1px;min-width:54px;text-align:center;}
+.timer-box.warn .timer-digits{color:var(--orange);}
+.timer-box.danger .timer-digits{color:var(--red);}
+.btn-pause{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;transition:all .2s;white-space:nowrap;}
+.btn-pause:hover{border-color:rgba(201,168,76,.4);color:var(--goldL);}
+.btn-pause.paused{border-color:rgba(52,211,153,.4);color:var(--green);}
+
+/* ── TABS ── */
+.tab-nav{max-width:920px;margin:0 auto;padding:0 24px;display:flex;gap:4px;}
+.tab-btn{padding:10px 20px;background:none;border:none;border-bottom:3px solid transparent;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px;white-space:nowrap;}
+.tab-btn:hover{color:var(--white);}
+.tab-btn.active{color:var(--goldL);border-bottom-color:var(--gold);}
+.tab-btn .badge{background:rgba(201,168,76,0.15);color:var(--gold);font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;}
+.tab-btn.locked{opacity:.38;pointer-events:none;}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+
+/* ── USER INFO ── */
+.info-card{max-width:920px;margin:28px auto 0;padding:0 24px;}
+.info-inner{background:var(--surface);border:1px solid rgba(201,168,76,0.2);border-radius:16px;padding:24px 28px;}
+.info-title{font-family:'Noto Serif Thai',serif;font-size:15px;font-weight:700;color:var(--goldL);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.info-field label{display:block;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.info-field input{width:100%;background:rgba(11,22,34,.7);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:'Sarabun',sans-serif;font-size:14px;padding:10px 13px;outline:none;transition:border-color .2s;}
+.info-field input:focus{border-color:rgba(201,168,76,.5);}
+.info-field input::placeholder{color:rgba(122,143,168,.45);}
+.info-field input.filled{border-color:rgba(52,211,153,.3);}
+
+/* ── HERO ── */
+.hero{max-width:920px;margin:0 auto;padding:28px 24px 20px;text-align:center;}
+.hero-tag{display:inline-block;border:1px solid rgba(201,168,76,0.3);color:var(--gold);background:var(--goldPale);font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:5px 14px;border-radius:4px;margin-bottom:16px;}
+.hero h1{font-family:'Noto Serif Thai',serif;font-size:clamp(20px,3.5vw,28px);font-weight:700;color:var(--white);line-height:1.45;margin-bottom:10px;}
+.hero h1 em{font-style:normal;color:var(--goldL);}
+.hero p{font-size:13px;color:var(--muted);line-height:1.75;max-width:540px;margin:0 auto 20px;}
+.dims{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;}
+.dim-chip{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;}
+.dot{width:7px;height:7px;border-radius:50%;}
+
+/* ── PROGRESS ── */
+.prog-wrap{max-width:920px;margin:0 auto;padding:4px 24px 16px;}
+.prog-row{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-bottom:6px;}
+.prog-track{height:3px;background:var(--border);border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--goldL));border-radius:3px;transition:width .4s;}
+
+/* ── QUESTIONS ── */
+.q-list{max-width:920px;margin:0 auto;padding:0 24px 20px;}
+.q-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:16px;position:relative;overflow:hidden;transition:border-color .25s;}
+.q-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:14px 0 0 14px;background:var(--gold);opacity:0;transition:opacity .25s;}
+.q-card.filled::before{opacity:1;}
+.q-card.filled{border-color:rgba(201,168,76,0.2);}
+.q-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;}
+.q-num{min-width:34px;height:34px;border-radius:8px;background:var(--goldPale);border:1px solid rgba(201,168,76,0.28);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--gold);flex-shrink:0;}
+.q-body{flex:1;}
+.q-dim{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:4px;margin-bottom:7px;}
+.dp{background:rgba(91,141,238,.14);color:#7aaaf5;} .da{background:rgba(52,211,153,.14);color:#5edeab;}
+.dn{background:rgba(251,146,60,.14);color:#fdae70;} .db{background:rgba(167,139,250,.14);color:#c4b0fd;}
+.q-text{font-size:14.5px;font-weight:600;color:var(--white);line-height:1.6;margin-bottom:5px;}
+.q-hint{font-size:12px;color:var(--muted);line-height:1.65;}
+.q-hint b{color:rgba(201,168,76,.8);}
+textarea{width:100%;background:rgba(11,22,34,.7);border:1px solid var(--border);border-radius:9px;color:var(--white);font-family:'Sarabun',sans-serif;font-size:14px;line-height:1.7;padding:12px 15px;resize:vertical;min-height:108px;outline:none;transition:border-color .2s;}
+textarea:focus{border-color:rgba(201,168,76,.5);}
+textarea::placeholder{color:rgba(122,143,168,.5);}
+textarea:disabled{opacity:.5;cursor:not-allowed;resize:none;}
+.char-row{text-align:right;font-size:11px;color:var(--muted);margin-top:5px;}
+
+/* ── SUBMIT ── */
+.submit-area{max-width:920px;margin:0 auto;padding:20px 24px 60px;text-align:center;}
+.req-note{font-size:12px;color:var(--muted);margin-bottom:12px;}
+.req-dots{display:flex;justify-content:center;gap:8px;margin-bottom:18px;}
+.req-dot{width:30px;height:30px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);transition:all .25s;}
+.req-dot.done{background:rgba(52,211,153,.15);border-color:rgba(52,211,153,.3);color:var(--green);}
+.btn-submit{background:linear-gradient(135deg,var(--gold),var(--goldL));color:#0b1622;border:none;padding:15px 52px;border-radius:11px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .3s;box-shadow:0 4px 18px rgba(201,168,76,.28);}
+.btn-submit:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 26px rgba(201,168,76,.4);}
+.btn-submit:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+.submit-sub{font-size:11.5px;color:var(--muted);margin-top:10px;}
+
+/* ── LOADING OVERLAY ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(11,22,34,.93);z-index:300;align-items:center;justify-content:center;flex-direction:column;gap:16px;backdrop-filter:blur(8px);}
+.overlay.on{display:flex;}
+.spin{width:50px;height:50px;border:3px solid rgba(201,168,76,.18);border-top-color:var(--gold);border-radius:50%;animation:sp .85s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg);}}
+.ov-title{font-family:'Noto Serif Thai',serif;font-size:17px;color:var(--goldL);}
+.ov-sub{font-size:12px;color:var(--muted);}
+
+/* ── TIMEOUT POPUP ── */
+.popup-backdrop{display:none;position:fixed;inset:0;background:rgba(11,22,34,.85);z-index:400;align-items:center;justify-content:center;backdrop-filter:blur(6px);}
+.popup-backdrop.on{display:flex;}
+.popup-box{background:var(--surface2);border:1px solid rgba(248,113,113,.35);border-radius:20px;padding:40px 36px;text-align:center;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+.popup-icon{font-size:52px;margin-bottom:14px;}
+.popup-title{font-family:'Noto Serif Thai',serif;font-size:22px;font-weight:700;color:var(--red);margin-bottom:8px;}
+.popup-msg{font-size:13.5px;color:var(--muted);line-height:1.75;margin-bottom:24px;}
+.popup-msg strong{color:var(--white);}
+.btn-ok{background:linear-gradient(135deg,var(--gold),var(--goldL));color:#0b1622;border:none;padding:13px 44px;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .3s;}
+.btn-ok:hover{transform:translateY(-2px);}
+
+/* ── RESULT WRAP ── */
+.result-wrap{max-width:920px;margin:0 auto;padding:30px 24px 70px;}
+.empty-result{text-align:center;padding:70px 24px;color:var(--muted);font-size:14px;line-height:2;}
+.empty-result .big{font-size:42px;margin-bottom:12px;}
+
+/* score hero */
+.user-banner{background:var(--surface);border:1px solid rgba(201,168,76,.18);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;}
+.user-info-items{display:flex;flex-wrap:wrap;gap:18px;flex:1;}
+.uinfo{display:flex;flex-direction:column;gap:2px;}
+.uinfo-lbl{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);}
+.uinfo-val{font-size:13.5px;font-weight:600;color:var(--white);}
+.time-used-badge{margin-left:auto;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);border-radius:8px;padding:8px 14px;text-align:center;white-space:nowrap;}
+.tub-lbl{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.5px;text-transform:uppercase;}
+.tub-val{font-family:'Noto Serif Thai',serif;font-size:18px;font-weight:700;color:var(--goldL);}
+
+.score-hero{background:linear-gradient(135deg,var(--surface),var(--surface2));border:1px solid rgba(201,168,76,.22);border-radius:18px;padding:36px 32px;text-align:center;margin-bottom:20px;position:relative;overflow:hidden;}
+.score-hero::after{content:'';position:absolute;bottom:-50px;right:-50px;width:200px;height:200px;background:radial-gradient(circle,rgba(201,168,76,.08) 0%,transparent 70%);pointer-events:none;}
+.s-emoji{font-size:50px;margin-bottom:10px;}
+.s-level{font-family:'Noto Serif Thai',serif;font-size:24px;font-weight:700;margin-bottom:5px;}
+.s-score-row{display:flex;align-items:baseline;justify-content:center;gap:3px;margin-bottom:10px;}
+.s-num{font-family:'Noto Serif Thai',serif;font-size:54px;font-weight:700;line-height:1;}
+.s-denom{font-size:20px;color:var(--muted);}
+.s-desc{font-size:13px;color:var(--muted);line-height:1.75;max-width:500px;margin:0 auto;}
+
+.dim-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;}
+.dim-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center;}
+.dim-card-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;}
+.dim-card-val{font-size:26px;font-weight:700;line-height:1;margin-bottom:5px;}
+.dim-card-sub{font-size:11px;color:var(--muted);}
+
+.bar-sec{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:20px;}
+.bar-ttl{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;}
+.bar-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.bar-lbl{font-size:12px;font-weight:600;color:var(--white);min-width:130px;}
+.bar-track{flex:1;height:7px;background:var(--border);border-radius:5px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:5px;transition:width .7s ease;}
+.bar-pct{font-size:12px;font-weight:700;min-width:34px;text-align:right;}
+
+.sw-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+.sw-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+.sw-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+.sw-txt{font-size:13px;color:var(--muted);line-height:1.7;}
+
+.fb-ttl{font-family:'Noto Serif Thai',serif;font-size:17px;font-weight:700;color:var(--goldL);margin-bottom:13px;display:flex;align-items:center;gap:7px;}
+.fb-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:20px 22px;margin-bottom:13px;}
+.fb-top{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.fb-num{width:28px;height:28px;border-radius:6px;background:var(--goldPale);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--gold);flex-shrink:0;}
+.fb-qtxt{flex:1;font-size:13px;font-weight:600;color:var(--white);}
+.fb-badge{font-size:12px;font-weight:700;padding:3px 10px;border-radius:6px;}
+.fb-hi{background:rgba(52,211,153,.15);color:var(--green);}
+.fb-md{background:rgba(251,146,60,.15);color:var(--orange);}
+.fb-lo{background:rgba(248,113,113,.15);color:var(--red);}
+.fb-lbl{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.fb-ans{font-size:13px;color:rgba(238,244,255,.65);line-height:1.7;background:rgba(11,22,34,.55);border-radius:7px;padding:9px 13px;margin-bottom:11px;border-left:3px solid rgba(201,168,76,.28);}
+.fb-cmt{font-size:13px;color:var(--muted);line-height:1.7;}
+
+/* ══ RECORDS SECTION ══ */
+.records-section{margin-top:32px;}
+.records-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;}
+.records-title{font-family:'Noto Serif Thai',serif;font-size:18px;font-weight:700;color:var(--goldL);display:flex;align-items:center;gap:8px;}
+.records-count{font-size:12px;color:var(--muted);font-family:'Sarabun',sans-serif;font-weight:400;}
+.export-btns{display:flex;gap:10px;flex-wrap:wrap;}
+.btn-export{display:flex;align-items:center;gap:7px;padding:10px 18px;border-radius:9px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .25s;border:none;white-space:nowrap;}
+.btn-excel{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.35);color:var(--green);}
+.btn-excel:hover{background:rgba(52,211,153,.2);transform:translateY(-1px);}
+.btn-pdf{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.35);color:var(--red);}
+.btn-pdf:hover{background:rgba(248,113,113,.2);transform:translateY(-1px);}
+.btn-clear{background:rgba(122,143,168,.08);border:1px solid rgba(122,143,168,.25);color:var(--muted);}
+.btn-clear:hover{background:rgba(122,143,168,.15);}
+
+/* TABLE */
+.table-wrapper{overflow-x:auto;border-radius:14px;border:1px solid var(--border);}
+.records-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.records-table thead{background:var(--surface2);}
+.records-table th{padding:12px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--border);}
+.records-table th:first-child{border-radius:14px 0 0 0;}
+.records-table th:last-child{border-radius:0 14px 0 0;}
+.records-table td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.04);white-space:nowrap;}
+.records-table tbody tr{background:var(--surface);transition:background .15s;}
+.records-table tbody tr:last-child td{border-bottom:none;}
+.records-table tbody tr:hover{background:var(--surface2);}
+.records-table .td-no{color:var(--muted);font-weight:700;text-align:center;width:36px;}
+.records-table .td-name{font-weight:600;color:var(--white);}
+.records-table .td-dept{color:var(--muted);}
+.records-table .td-score{font-family:'Noto Serif Thai',serif;font-weight:700;font-size:15px;text-align:center;}
+.records-table .td-dim{text-align:center;font-weight:600;}
+.records-table .td-level{text-align:center;}
+.records-table .td-time{color:var(--muted);text-align:center;}
+.records-table .td-date{color:var(--muted);font-size:11px;}
+.level-badge{display:inline-block;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:700;}
+.lv-ex{background:rgba(52,211,153,.15);color:#34d399;}
+.lv-gd{background:rgba(91,141,238,.15);color:#7aaaf5;}
+.lv-sa{background:rgba(251,146,60,.15);color:#fb923c;}
+.lv-ni{background:rgba(248,113,113,.15);color:#f87171;}
+
+.no-records{text-align:center;padding:40px 24px;color:var(--muted);font-size:13px;}
+.no-records .ico{font-size:32px;margin-bottom:8px;}
+
+/* retry */
+.retry-row{text-align:center;margin-top:28px;}
+.btn-retry{background:none;border:1px solid rgba(201,168,76,.35);color:var(--goldL);padding:12px 36px;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;transition:all .25s;}
+.btn-retry:hover{background:var(--goldPale);border-color:var(--gold);}
+
+/* divider */
+.divider{height:1px;background:var(--border);margin:32px 0;}
+
+@media(max-width:680px){
+  .info-grid{grid-template-columns:1fr;}
+  .sw-grid{grid-template-columns:1fr;}
+  .topbar-inner,.tab-nav,.info-card,.hero,.q-list,.submit-area,.result-wrap{padding-left:14px;padding-right:14px;}
+  .score-hero{padding:24px 18px;}
+  .bar-lbl{min-width:90px;font-size:11px;}
+  .records-header{flex-direction:column;align-items:flex-start;}
 }
-
-/* ===== TOP BAR ===== */
-.topbar{background:#0b1622;border-bottom:1px solid rgba(201,168,76,.3)}
-.topbar-inner{max-width:960px;margin:auto;padding:12px 20px;display:flex;justify-content:space-between}
-.brand-name{font-family:'Noto Serif Thai',serif;font-weight:700;color:var(--goldL)}
-.tab-nav{display:flex;gap:6px;padding:0 20px}
-.tab-btn{
-  background:none;border:none;color:var(--muted);
-  padding:10px 16px;font-weight:600;cursor:pointer
-}
-.tab-btn.active{color:var(--goldL);border-bottom:2px solid var(--gold)}
-.tab-btn.locked{opacity:.4;pointer-events:none}
-
-/* ===== PANES ===== */
-.tab-pane{display:none}
-.tab-pane.active{display:block}
-.container{max-width:960px;margin:auto;padding:20px}
-
-/* ===== BUTTON ===== */
-.btn{
-  background:linear-gradient(135deg,#c9a84c,#e6c96a);
-  border:none;padding:12px 30px;border-radius:10px;
-  font-weight:700;cursor:pointer
-}
-.btn:disabled{opacity:.5}
-
-/* ===== TABLE ===== */
-table{width:100%;border-collapse:collapse}
-th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.08)}
-th{color:var(--goldL);text-align:left;font-size:12px}
 </style>
 </head>
-
 <body>
 
-<!-- ===== TOP ===== -->
+<!-- ══ TOPBAR ══ -->
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="brand-name">🤖 HR AI Assessment</div>
+    <div class="brand">
+      <div class="brand-icon">🤖</div>
+      <div>
+        <div class="brand-name">HR AI Assessment</div>
+        <div class="brand-sub">Prompt Writing & AI in HR</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="timer-box" id="timerBox">
+        <span>⏱</span>
+        <span class="timer-digits" id="timerDisplay">10:00</span>
+        <button class="btn-pause" id="btnPause" onclick="togglePause()">⏸ หยุด</button>
+      </div>
+      <span class="tag-staff">ระดับ Staff</span>
+    </div>
   </div>
   <div class="tab-nav">
-    <button class="tab-btn active" id="btn-exam" onclick="switchTab('exam')">📝 ทำข้อสอบ</button>
-    <button class="tab-btn locked" id="btn-result" onclick="switchTab('result')">📊 ผลลัพธ์</button>
-    <button class="tab-btn" id="btn-admin" onclick="openAdminTab()">🛠 Admin</button>
+    <button class="tab-btn active" id="btn-exam" onclick="switchTab('exam')">📝 ทำข้อสอบ <span class="badge" id="exam-badge">0/5</span></button>
+    <button class="tab-btn locked" id="btn-result" onclick="switchTab('result')">📊 ผลลัพธ์ &amp; การตรวจ <span id="result-icon">🔒</span></button>
   </div>
 </div>
 
-<!-- ===== EXAM ===== -->
+<!-- ══ EXAM PANE ══ -->
 <div class="tab-pane active" id="pane-exam">
-  <div class="container">
-    <h2>📝 แบบทดสอบ HR + AI</h2>
-
-    <textarea id="a1" placeholder="คำตอบข้อ 1" style="width:100%;min-height:80px"></textarea><br><br>
-    <textarea id="a2" placeholder="คำตอบข้อ 2" style="width:100%;min-height:80px"></textarea><br><br>
-    <textarea id="a3" placeholder="คำตอบข้อ 3" style="width:100%;min-height:80px"></textarea><br><br>
-    <textarea id="a4" placeholder="คำตอบข้อ 4" style="width:100%;min-height:80px"></textarea><br><br>
-    <textarea id="a5" placeholder="คำตอบข้อ 5" style="width:100%;min-height:80px"></textarea><br><br>
-
-    <button class="btn" id="submitBtn" onclick="doSubmit(false)">ส่งให้ AI ตรวจ</button>
+  <div class="info-card">
+    <div class="info-inner">
+      <div class="info-title">👤 ข้อมูลผู้ทดสอบ</div>
+      <div class="info-grid">
+        <div class="info-field"><label>ชื่อ</label><input type="text" id="f-fname" placeholder="ชื่อจริง" oninput="onInfoInput(this)"></div>
+        <div class="info-field"><label>นามสกุล</label><input type="text" id="f-lname" placeholder="นามสกุล" oninput="onInfoInput(this)"></div>
+        <div class="info-field"><label>แผนก / ฝ่าย</label><input type="text" id="f-dept" placeholder="เช่น HR, Finance, IT" oninput="onInfoInput(this)"></div>
+        <div class="info-field"><label>บริษัท / องค์กร</label><input type="text" id="f-company" placeholder="ชื่อบริษัท" oninput="onInfoInput(this)"></div>
+      </div>
+    </div>
   </div>
-</div>
+  <div class="hero">
+    <div class="hero-tag">แบบทดสอบ — 5 ข้อ · คะแนนเต็ม 100 · เวลา 10 นาที</div>
+    <h1>การเขียน <em>Prompt</em> &amp; การใช้งาน AI ใน HR</h1>
+    <p>ตอบคำถามทั้ง 5 ข้อให้ครบถ้วนภายในเวลาที่กำหนด AI จะตรวจและแสดงผลในแท็บ <strong style="color:var(--goldL)">ผลลัพธ์ &amp; การตรวจ</strong></p>
+    <div class="dims">
+      <div class="dim-chip"><div class="dot" style="background:#5b8dee"></div>Prompt Writing</div>
+      <div class="dim-chip"><div class="dot" style="background:#34d399"></div>Application</div>
+      <div class="dim-chip"><div class="dot" style="background:#fb923c"></div>Analysis</div>
+      <div class="dim-chip"><div class="dot" style="background:#a78bfa"></div>Business Impact</div>
+    </div>
+  </div>
+  <div class="prog-wrap">
+    <div class="prog-row"><span>ความคืบหน้า</span><span id="prog-txt">0 / 5 ข้อ</span></div>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+  <div class="q-list">
+    <div class="q-card" id="card-1"><div class="q-top"><div class="q-num">1</div><div class="q-body"><div class="q-dim dp">🔵 Prompt Writing · 25 คะแนน</div><div class="q-text">เขียน Prompt เพื่อขอให้ AI สร้างแบบประเมินพนักงานประจำปี (Performance Appraisal) สำหรับ Staff แผนก HR</div><div class="q-hint">💡 <b>คำแนะนำ:</b> ระบุ บริบท · เป้าหมาย · รูปแบบผลลัพธ์ · เงื่อนไขพิเศษ</div></div></div><textarea id="a1" rows="4" placeholder="พิมพ์ Prompt ของคุณที่นี่..."></textarea><div class="char-row" id="cc1">0 ตัวอักษร</div></div>
+    <div class="q-card" id="card-2"><div class="q-top"><div class="q-num">2</div><div class="q-body"><div class="q-dim da">🟢 Application · 20 คะแนน</div><div class="q-text">ในฐานะ HR Staff คุณจะนำ AI มาช่วยในกระบวนการสรรหาบุคลากร (Recruitment) ได้อย่างไร? ยกตัวอย่าง 3 ขั้นตอนพร้อมอธิบาย</div><div class="q-hint">💡 <b>คำแนะนำ:</b> อธิบายแต่ละขั้นตอนว่า AI ทำอะไร ช่วยได้อย่างไร ประหยัดเวลาแค่ไหน</div></div></div><textarea id="a2" rows="4" placeholder="ขั้นตอนที่ 1: ..."></textarea><div class="char-row" id="cc2">0 ตัวอักษร</div></div>
+    <div class="q-card" id="card-3"><div class="q-top"><div class="q-num">3</div><div class="q-body"><div class="q-dim dn">🟠 Analysis · 20 คะแนน</div><div class="q-text">ปรับปรุง Prompt นี้ให้ดีขึ้น: <span style="color:rgba(238,244,255,.5);font-style:italic;">"ช่วยวิเคราะห์ข้อมูลพนักงานให้หน่อย"</span> โดยเพิ่มรายละเอียดให้ได้ผลลัพธ์คุณภาพสูงขึ้น</div><div class="q-hint">💡 <b>คำแนะนำ:</b> เพิ่ม Context · ข้อมูลที่มีอยู่ · เป้าหมาย · รูปแบบที่ต้องการ</div></div></div><textarea id="a3" rows="4" placeholder="Prompt ที่ปรับปรุงแล้ว: ..."></textarea><div class="char-row" id="cc3">0 ตัวอักษร</div></div>
+    <div class="q-card" id="card-4"><div class="q-top"><div class="q-num">4</div><div class="q-body"><div class="q-dim dn">🟠 Analysis · 20 คะแนน</div><div class="q-text">HR พบว่า Turnover Rate ปีนี้สูงขึ้น 15% คุณจะใช้ AI ช่วยวิเคราะห์หาสาเหตุและแก้ปัญหาได้อย่างไร?</div><div class="q-hint">💡 <b>คำแนะนำ:</b> อธิบายตั้งแต่ รวบรวมข้อมูล → เขียน Prompt → นำผลลัพธ์ไปใช้</div></div></div><textarea id="a4" rows="4" placeholder="อธิบายกระบวนการวิเคราะห์..."></textarea><div class="char-row" id="cc4">0 ตัวอักษร</div></div>
+    <div class="q-card" id="card-5"><div class="q-top"><div class="q-num">5</div><div class="q-body"><div class="q-dim db">🟣 Business Impact · 15 คะแนน</div><div class="q-text">การนำ AI มาใช้ใน HR มีผลกระทบเชิงบวกและเชิงลบต่อองค์กรอย่างไร? ในฐานะ HR Staff ควรระวังอะไรบ้าง?</div><div class="q-hint">💡 <b>คำแนะนำ:</b> วิเคราะห์ทั้งประสิทธิภาพ ความเสี่ยง ข้อมูลส่วนบุคคล และจริยธรรม</div></div></div><textarea id="a5" rows="4" placeholder="วิเคราะห์ผลกระทบและข้อควรระวัง..."></textarea><div class="char-row" id="cc5">0 ตัวอักษร</div></div>
+  </div>
+  <div class="submit-area">
+    <div class="req-note">กรอกคำตอบให้ครบทุกข้อ (✓ สีเขียว) เพื่อเปิดปุ่มส่ง</div>
+    <div class="req-dots">
+      <div class="req-dot" id="dot1">1</div><div class="req-dot" id="dot2">2</div>
+      <div class="req-dot" id="dot3">3</div><div class="req-dot" id="dot4">4</div>
+      <div class="req-dot" id="dot5">5</div>
+    </div>
+    <button class="btn-submit" id="submitBtn" disabled>ส่งคำตอบให้ AI ตรวจ 🎯</button>
+    <div class="submit-sub">AI จะประเมินผลภายใน 30–60 วินาที</div>
+  </div>
+</div><!-- /pane-exam -->
 
-<!-- ===== RESULT ===== -->
+<!-- ══ RESULT PANE ══ -->
 <div class="tab-pane" id="pane-result">
-  <div class="container">
-    <h2>📊 ผลการประเมิน</h2>
-    <pre id="resultBox" style="white-space:pre-wrap;color:#eef4ff"></pre>
+  <div class="result-wrap">
+    <div class="empty-result" id="empty-result">
+      <div class="big">🔒</div>
+      <div>ยังไม่มีผลลัพธ์<br>กรุณาทำข้อสอบและส่งคำตอบก่อน</div>
+    </div>
+    <div id="result-body" style="display:none"></div>
+
+    <!-- RECORDS TABLE — always visible -->
+    <div class="divider" id="records-divider" style="display:none"></div>
+    <div class="records-section" id="records-section">
+      <div class="records-header">
+        <div>
+          <div class="records-title">📋 ประวัติผลการทดสอบ <span class="records-count" id="rec-count"></span></div>
+        </div>
+        <div class="export-btns">
+          <button class="btn-export btn-excel" onclick="exportExcel()">
+            <span>📊</span> ดาวน์โหลด Excel
+          </button>
+          <button class="btn-export btn-clear" onclick="clearRecords()">
+            🗑 ล้างข้อมูล
+          </button>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table class="records-table" id="records-table">
+          <thead>
+            <tr>
+              <th class="td-no">#</th>
+              <th>วันที่/เวลา</th>
+              <th>ชื่อ-นามสกุล</th>
+              <th>แผนก</th>
+              <th>บริษัท</th>
+              <th>Prompt<br><span style="font-size:9px;opacity:.6">/25</span></th>
+              <th>Application<br><span style="font-size:9px;opacity:.6">/20</span></th>
+              <th>Analysis<br><span style="font-size:9px;opacity:.6">/40</span></th>
+              <th>Impact<br><span style="font-size:9px;opacity:.6">/15</span></th>
+              <th>รวม<br><span style="font-size:9px;opacity:.6">/100</span></th>
+              <th>ระดับ</th>
+              <th>เวลา</th>
+            </tr>
+          </thead>
+          <tbody id="records-tbody">
+            <tr><td colspan="12"><div class="no-records"><div class="ico">📭</div>ยังไม่มีบันทึกผลการทดสอบ</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- ===== ADMIN ===== -->
-<div class="tab-pane" id="pane-admin">
-  <div class="container">
-    <h2>🛠 Admin Dashboard</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>ชื่อ</th>
-          <th>แผนก</th>
-          <th>บริษัท</th>
-          <th>คะแนน</th>
-          <th>ระดับ</th>
-        </tr>
-      </thead>
-      <tbody id="admin-tbody">
-        <tr><td colspan="6">ยังไม่มีข้อมูล</td></tr>
-      </tbody>
-    </table>
+<!-- LOADING OVERLAY -->
+<div class="overlay" id="overlay">
+  <div id="ov-loading" style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+    <div class="spin"></div>
+    <div class="ov-title">AI กำลังตรวจข้อสอบ...</div>
+    <div class="ov-sub" id="ov-sub">กำลังวิเคราะห์คำตอบทั้ง 5 ข้อ</div>
+  </div>
+  <div id="ov-error" style="display:none;text-align:center;padding:0 24px;max-width:420px;">
+    <div style="font-size:48px;margin-bottom:12px;">&#9888;&#65039;</div>
+    <div style="font-family:'Noto Serif Thai',serif;font-size:18px;color:#f87171;margin-bottom:8px;">เกิดข้อผิดพลาด</div>
+    <div id="ov-err-msg" style="font-size:13px;color:#7a8fa8;line-height:1.7;margin-bottom:24px;word-break:break-all;"></div>
+    <button onclick="retrySubmit()" style="background:linear-gradient(135deg,#c9a84c,#e6c96a);color:#0b1622;border:none;padding:12px 36px;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-right:10px;">&#x1F504; ลองใหม่</button>
+    <button onclick="cancelSubmit()" style="background:none;border:1px solid rgba(255,255,255,0.15);color:#7a8fa8;padding:12px 24px;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:14px;cursor:pointer;">ยกเลิก</button>
+  </div>
+</div>
+
+<!-- TIMEOUT POPUP -->
+<div class="popup-backdrop" id="timeoutPopup">
+  <div class="popup-box">
+    <div class="popup-icon">⏰</div>
+    <div class="popup-title">หมดเวลาแล้ว!</div>
+    <div class="popup-msg">หมดเวลา 10 นาทีแล้ว<br>ระบบได้<strong>บันทึกและส่งคำตอบ</strong>ของคุณโดยอัตโนมัติ<br>กด <strong>ตกลง</strong> เพื่อดูผลการตรวจ</div>
+    <button class="btn-ok" id="popupOkBtn">ตกลง</button>
   </div>
 </div>
 
 <script>
-/* ===== CONFIG ===== */
-const WORKER_URL = 'https://aged-disk-25db.kamolklang-nick.workers.dev';
-const STORAGE_KEY = 'hr_exam_records';
-const ADMIN_PIN = '134300';
+/* ══════════════════════════════════════
+   STATE
+══════════════════════════════════════ */
+var WORKER_URL = 'https://aged-disk-25db.kamolklang-nick.workers.dev';
 
-/* ===== STATE ===== */
-let answers = {1:'',2:'',3:'',4:'',5:''};
-let submitTriggered = false;
+var answers = {1:'',2:'',3:'',4:'',5:''};
+var TOTAL_SECS = 10 * 60;
+var remainSecs = TOTAL_SECS;
+var timerInterval = null;
+var isPaused = false;
+var timerExpired = false;
+var timeUsedSecs = 0;
+var submitTriggered = false;
+var allRecords = [];
+var STORAGE_KEY = 'hr_exam_records';
 
-/* ===== TAB ===== */
-function switchTab(t){
-  ['exam','result','admin'].forEach(x=>{
-    document.getElementById('pane-'+x).classList.toggle('active',x===t);
-    document.getElementById('btn-'+x)?.classList.toggle('active',x===t);
-  });
-}
-
-/* ===== SUBMIT ===== */
-async function doSubmit(){
-  if(submitTriggered) return;
-  submitTriggered=true;
-
-  for(let i=1;i<=5;i++){
-    answers[i]=document.getElementById('a'+i).value||'-';
+/* ══════════════════════════════════════
+   INIT
+══════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', function(){
+  for(var i=1;i<=5;i++){
+    (function(n){
+      var ta = document.getElementById('a'+n);
+      ta.addEventListener('input', function(){ handleInput(n); });
+      // ── Block paste
+      ta.addEventListener('paste', function(e){
+        e.preventDefault();
+        showCheatWarning();
+      });
+      // ── Block drag-and-drop text into textarea
+      ta.addEventListener('drop', function(e){
+        e.preventDefault();
+        showCheatWarning();
+      });
+      // ── Disable right-click context menu on textareas
+      ta.addEventListener('contextmenu', function(e){
+        e.preventDefault();
+      });
+    })(i);
   }
+  document.getElementById('submitBtn').addEventListener('click', function(){ doSubmit(false); });
+  document.getElementById('popupOkBtn').addEventListener('click', onPopupOk);
+  startTimer();
+  loadRecords();
+});
 
-  const prompt =
-`ตรวจข้อสอบ HR AI
-คำตอบ:
-1 ${answers[1]}
-2 ${answers[2]}
-3 ${answers[3]}
-4 ${answers[4]}
-5 ${answers[5]}
-ตอบเป็น JSON`;
-
-  const r = await fetch(WORKER_URL,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({prompt})
-  });
-  const data = await r.json();
-
-  let result;
-  if(data.type==='JSON') result=data.text;
-  else{
-    const t=data.text;
-    result=JSON.parse(t.slice(t.indexOf('{'),t.lastIndexOf('}')+1));
+/* ══════════════════════════════════════
+   STORAGE
+══════════════════════════════════════ */
+async function loadRecords(){
+  try{
+    allRecords = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  } catch(e){
+    allRecords = [];
   }
-
-  document.getElementById('resultBox').textContent =
-    'คะแนนรวม: '+result.totalScore+'\nระดับ: '+result.level;
-
-  const rec={
-    fname:'-',lname:'-',dept:'-',company:'-',
-    totalScore:result.totalScore,
-    level:result.level
-  };
-
-  const all=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
-  all.unshift(rec);
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(all));
-
-  document.getElementById('btn-result').classList.remove('locked');
-  switchTab('result');
+  renderRecordsTable();
 }
 
-/* ===== ADMIN ===== */
-function openAdminTab(){
-  const pin=prompt('ใส่รหัส Admin');
-  if(pin!==ADMIN_PIN){alert('รหัสไม่ถูกต้อง');return;}
-  renderAdmin();
-  switchTab('admin');
+async function saveRecords(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(allRecords));
+  } catch(e){}
 }
-function renderAdmin(){
-  const tb=document.getElementById('admin-tbody');
-  const recs=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
-  if(recs.length===0){
-    tb.innerHTML='<tr><td colspan="6">ยังไม่มีข้อมูล</td></tr>';
+
+function clearRecords(){
+  document.getElementById('clear-modal').style.display = 'flex';
+  document.getElementById('clear-pin-input').value = '';
+  document.getElementById('clear-pin-error').style.display = 'none';
+  setTimeout(function(){ document.getElementById('clear-pin-input').focus(); }, 100);
+}
+
+async function confirmClear(){
+  var pin = document.getElementById('clear-pin-input').value.trim();
+  var errEl = document.getElementById('clear-pin-error');
+  if(pin !== '134' + '300'){
+    errEl.textContent = '❌ รหัสไม่ถูกต้อง กรุณาลองใหม่';
+    errEl.style.display = 'block';
+    document.getElementById('clear-pin-input').value = '';
+    document.getElementById('clear-pin-input').focus();
     return;
   }
-  tb.innerHTML=recs.map((r,i)=>`
-    <tr>
-      <td>${i+1}</td>
-      <td>${r.fname} ${r.lname}</td>
-      <td>${r.dept}</td>
-      <td>${r.company}</td>
-      <td><b>${r.totalScore}</b></td>
-      <td>${r.level}</td>
-    </tr>
-  `).join('');
+  closeClearModal();
+  allRecords = [];
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  renderRecordsTable();
+  showExportMsg('✅ ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว');
+}
+
+function closeClearModal(){
+  document.getElementById('clear-modal').style.display = 'none';
+}
+
+/* ══════════════════════════════════════
+   TIMER
+══════════════════════════════════════ */
+function startTimer(){
+  timerInterval = setInterval(function(){
+    if(isPaused) return;
+    remainSecs--; timeUsedSecs++;
+    updateTimerDisplay();
+    if(remainSecs<=0 && !timerExpired){ timerExpired=true; clearInterval(timerInterval); onTimeUp(); }
+  },1000);
+}
+function updateTimerDisplay(){
+  var m=Math.floor(remainSecs/60), s=remainSecs%60;
+  document.getElementById('timerDisplay').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+  var box=document.getElementById('timerBox');
+  box.classList.remove('warn','danger');
+  if(remainSecs<=60) box.classList.add('danger');
+  else if(remainSecs<=180) box.classList.add('warn');
+}
+function togglePause(){
+  if(timerExpired||submitTriggered) return;
+  isPaused=!isPaused;
+  var btn=document.getElementById('btnPause');
+  if(isPaused){
+    btn.textContent='▶ ต่อ'; btn.classList.add('paused');
+    document.getElementById('timerBox').style.opacity='.6';
+    for(var i=1;i<=5;i++) document.getElementById('a'+i).disabled=true;
+  } else {
+    btn.textContent='⏸ หยุด'; btn.classList.remove('paused');
+    document.getElementById('timerBox').style.opacity='1';
+    for(var i=1;i<=5;i++) document.getElementById('a'+i).disabled=false;
+  }
+}
+function onTimeUp(){
+  lockInputs();
+  document.getElementById('submitBtn').disabled=true;
+  document.getElementById('btnPause').disabled=true;
+  document.getElementById('timeoutPopup').classList.add('on');
+}
+function lockInputs(){
+  for(var i=1;i<=5;i++) document.getElementById('a'+i).disabled=true;
+  ['f-fname','f-lname','f-dept','f-company'].forEach(function(id){ document.getElementById(id).disabled=true; });
+}
+function onPopupOk(){ document.getElementById('timeoutPopup').classList.remove('on'); doSubmit(true); }
+function formatTimeUsed(secs){
+  var m=Math.floor(secs/60),s=secs%60;
+  return m===0?s+' วิ':m+'น '+(s>0?s+'วิ':'');
+}
+function formatTimeFull(secs){
+  var m=Math.floor(secs/60),s=secs%60;
+  if(m===0) return s+' วินาที';
+  return m+' นาที'+(s>0?' '+s+' วินาที':'');
+}
+
+/* ══════════════════════════════════════
+   INPUT
+══════════════════════════════════════ */
+function onInfoInput(el){ el.classList.toggle('filled', el.value.trim().length>0); }
+function handleInput(n){
+  var v=document.getElementById('a'+n).value;
+  answers[n]=v;
+  document.getElementById('cc'+n).textContent=v.length+' ตัวอักษร';
+  var dot=document.getElementById('dot'+n), card=document.getElementById('card-'+n);
+  if(v.trim().length>0){ dot.classList.add('done'); dot.textContent='✓'; card.classList.add('filled'); }
+  else{ dot.classList.remove('done'); dot.textContent=n; card.classList.remove('filled'); }
+  refreshProgress();
+}
+function refreshProgress(){
+  var f=0; for(var i=1;i<=5;i++) if(answers[i].trim().length>0) f++;
+  document.getElementById('prog-txt').textContent=f+' / 5 ข้อ';
+  document.getElementById('prog-fill').style.width=(f/5*100)+'%';
+  document.getElementById('exam-badge').textContent=f+'/5';
+  if(!timerExpired&&!submitTriggered) document.getElementById('submitBtn').disabled=(f<5);
+}
+
+/* ══════════════════════════════════════
+   TAB
+══════════════════════════════════════ */
+function switchTab(t){
+  var e=(t==='exam');
+  document.getElementById('btn-exam').classList.toggle('active',e);
+  document.getElementById('btn-result').classList.toggle('active',!e);
+  document.getElementById('pane-exam').classList.toggle('active',e);
+  document.getElementById('pane-result').classList.toggle('active',!e);
+}
+
+/* ══════════════════════════════════════
+   SUBMIT
+══════════════════════════════════════ */
+async function doSubmit(isAuto){
+  if(submitTriggered) return;
+  submitTriggered = true;
+  clearInterval(timerInterval);
+  if(!timerExpired) timeUsedSecs = TOTAL_SECS - remainSecs;
+
+  document.getElementById('ov-loading').style.display = 'flex';
+  document.getElementById('ov-error').style.display   = 'none';
+  document.getElementById('overlay').classList.add('on');
+  document.getElementById('submitBtn').disabled = true;
+
+  var msgs = [
+    'กำลังประเมิน Prompt Writing...',
+    'กำลังวิเคราะห์ Application...',
+    'กำลังตรวจ Prompt Improvement...',
+    'กำลังวิเคราะห์ Turnover Case...',
+    'กำลังประเมิน Business Impact...',
+    'กำลังคำนวณคะแนนรวม...'
+  ];
+  var si = 0;
+  var subEl = document.getElementById('ov-sub');
+  var ivl = setInterval(function(){ subEl.textContent = msgs[si++ % msgs.length]; }, 3000);
+
+  var fname   = document.getElementById('f-fname').value.trim()   || '-';
+  var lname   = document.getElementById('f-lname').value.trim()   || '-';
+  var dept    = document.getElementById('f-dept').value.trim()    || '-';
+  var company = document.getElementById('f-company').value.trim() || '-';
+
+  var userContent = 'คุณเป็นผู้ตรวจข้อสอบ HR AI Assessment ระดับ Staff\n'
+    + 'ผู้สอบ: ' + fname + ' ' + lname + ' | แผนก: ' + dept + ' | บริษัท: ' + company + '\n'
+    + 'เวลาที่ใช้: ' + formatTimeFull(timeUsedSecs) + (isAuto ? ' (หมดเวลาอัตโนมัติ)' : '') + '\n\n'
+    + 'ข้อสอบ:\n'
+    + 'ข้อ 1 [Prompt Writing, 25 คะแนน]: เขียน Prompt สร้างแบบประเมินพนักงานประจำปี HR Staff\n'
+    + 'ข้อ 2 [Application, 20 คะแนน]: 3 ขั้นตอนนำ AI ช่วยงาน Recruitment\n'
+    + 'ข้อ 3 [Analysis, 20 คะแนน]: ปรับปรุง Prompt วิเคราะห์ข้อมูลพนักงาน\n'
+    + 'ข้อ 4 [Analysis, 20 คะแนน]: ใช้ AI วิเคราะห์ Turnover Rate สูงขึ้น 15%\n'
+    + 'ข้อ 5 [Business Impact, 15 คะแนน]: ผลกระทบ AI ใน HR และข้อควรระวัง\n\n'
+    + 'คำตอบผู้สอบ:\n'
+    + 'ข้อ 1: ' + (answers[1] || '(ไม่ได้ตอบ)') + '\n'
+    + 'ข้อ 2: ' + (answers[2] || '(ไม่ได้ตอบ)') + '\n'
+    + 'ข้อ 3: ' + (answers[3] || '(ไม่ได้ตอบ)') + '\n'
+    + 'ข้อ 4: ' + (answers[4] || '(ไม่ได้ตอบ)') + '\n'
+    + 'ข้อ 5: ' + (answers[5] || '(ไม่ได้ตอบ)') + '\n\n'
+    + 'ระดับ: 90-100=ดีเยี่ยม, 75-89=ดี, 60-74=พอใช้, <60=ต้องพัฒนา\n\n'
+    + 'ตอบเป็น JSON เท่านั้น ห้ามมี markdown หรือข้อความอื่นนอก JSON:\n'
+    + '{"totalScore":<number>,"level":"<ภาษาไทย>","levelEn":"<Excellent|Good|Satisfactory|Needs Improvement>","emoji":"<emoji>","summary":"<สรุป 2-3 ประโยคภาษาไทย>","dimensions":{"prompt":<0-25>,"application":<0-20>,"analysis":<0-40>,"impact":<0-15>},"questions":[{"num":1,"score":<number>,"maxScore":25,"feedback":"<2 ประโยคภาษาไทย>"},{"num":2,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":3,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":4,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":5,"score":<number>,"maxScore":15,"feedback":"<2 ประโยคภาษาไทย>"}],"strengths":"<จุดเด่น 1-2 ข้อภาษาไทย>","improvements":"<สิ่งที่ควรพัฒนา 1-2 ข้อภาษาไทย>"}';
+
+  try {
+    var resp = await fetch(WORKER_URL, {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ prompt: userContent })
+    });
+
+    clearInterval(ivl);
+
+    var data = await resp.json();
+    console.log('Worker response:', data);
+
+    if (!resp.ok) {
+      throw new Error('HTTP ' + resp.status + ': ' + JSON.stringify(data));
+    }
+
+    if (data.ok === false) {
+      throw new Error(data.error || 'Worker returned error');
+    }
+
+    var raw = '';
+    if (typeof data.text === 'string' && data.text.trim()) {
+      raw = data.text.trim();
+    }
+
+    if (!raw) {
+      throw new Error('AI ไม่ส่งข้อความกลับมา กรุณาดู Response ใน Network/Console');
+    }
+
+    var clean = raw.replace(/```json/gi,'').replace(/```/g,'').trim();
+    var j0 = clean.indexOf('{');
+    var j1 = clean.lastIndexOf('}');
+
+    if (j0 === -1 || j1 === -1) {
+      throw new Error('ไม่พบ JSON ในคำตอบ:\n' + clean.slice(0, 500));
+    }
+
+    var result = JSON.parse(clean.slice(j0, j1 + 1));
+
+    if (typeof result.totalScore !== 'number') {
+      throw new Error('JSON ไม่ครบ: ขาด totalScore');
+    }
+
+    document.getElementById('overlay').classList.remove('on');
+
+    var rec = {
+      id: Date.now(),
+      date: new Date().toLocaleString('th-TH',{year:'2-digit',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),
+      fname: fname, lname: lname, dept: dept, company: company,
+      totalScore: result.totalScore,
+      level: result.level, levelEn: result.levelEn,
+      prompt: (result.dimensions||{}).prompt || 0,
+      application: (result.dimensions||{}).application || 0,
+      analysis: (result.dimensions||{}).analysis || 0,
+      impact: (result.dimensions||{}).impact || 0,
+      timeUsed: formatTimeUsed(timeUsedSecs),
+      timeUsedSecs: timeUsedSecs,
+      isAuto: isAuto
+    };
+    allRecords.unshift(rec);
+    await saveRecords();
+
+    renderResult(result, fname, lname, dept, company, isAuto);
+    renderRecordsTable();
+    document.getElementById('btn-result').classList.remove('locked');
+    document.getElementById('result-icon').textContent = '🏆';
+    document.getElementById('records-divider').style.display = '';
+    switchTab('result');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  } catch(e) {
+    clearInterval(ivl);
+    var errMsg = (e && e.message) ? e.message : String(e);
+    document.getElementById('ov-err-msg').textContent = errMsg;
+    document.getElementById('ov-loading').style.display = 'none';
+    document.getElementById('ov-error').style.display   = 'block';
+    submitTriggered = false;
+  }
+}
+
+function showCheatWarning(){
+  document.getElementById('cheat-modal').style.display = 'flex';
+}
+
+function closeCheatModal(){
+  document.getElementById('cheat-modal').style.display = 'none';
+}
+
+function retrySubmit(){
+  document.getElementById('ov-loading').style.display = 'flex';
+  document.getElementById('ov-error').style.display   = 'none';
+  document.getElementById('overlay').classList.remove('on');
+  submitTriggered = false;
+  document.getElementById('submitBtn').disabled = false;
+}
+
+function cancelSubmit(){
+  document.getElementById('ov-loading').style.display = 'flex';
+  document.getElementById('ov-error').style.display   = 'none';
+  document.getElementById('overlay').classList.remove('on');
+  submitTriggered = false;
+  if (!timerExpired) {
+    document.getElementById('submitBtn').disabled = false;
+    clearInterval(timerInterval);
+    startTimer();
+  }
+}
+
+/* ══════════════════════════════════════
+   RENDER RESULT (individual)
+══════════════════════════════════════ */
+var QMeta=[
+  {dim:'Prompt Writing',text:'แบบประเมินพนักงานประจำปี'},
+  {dim:'Application',text:'3 ขั้นตอน AI ช่วย Recruitment'},
+  {dim:'Analysis',text:'ปรับปรุง Prompt วิเคราะห์พนักงาน'},
+  {dim:'Analysis',text:'Turnover Rate สูงขึ้น 15%'},
+  {dim:'Business Impact',text:'ผลกระทบ AI ใน HR'},
+];
+var lvlCol={Excellent:'#34d399',Good:'#7aaaf5',Satisfactory:'#fb923c','Needs Improvement':'#f87171'};
+
+function renderResult(r,fname,lname,dept,company,isAuto){
+  var col=lvlCol[r.levelEn]||'#c9a84c';
+  var dims=[
+    {key:'prompt',lbl:'Prompt Writing',max:25,col:'#7aaaf5'},
+    {key:'application',lbl:'Application',max:20,col:'#34d399'},
+    {key:'analysis',lbl:'Analysis',max:40,col:'#fb923c'},
+    {key:'impact',lbl:'Business Impact',max:15,col:'#a78bfa'},
+  ];
+  var fullName=((fname==='—'?'':fname)+' '+(lname==='—'?'':lname)).trim()||'—';
+  var banner='<div class="user-banner"><span style="font-size:24px">👤</span>'
+    +'<div class="user-info-items">'
+    +'<div class="uinfo"><span class="uinfo-lbl">ชื่อ-นามสกุล</span><span class="uinfo-val">'+fullName+'</span></div>'
+    +'<div class="uinfo"><span class="uinfo-lbl">แผนก</span><span class="uinfo-val">'+dept+'</span></div>'
+    +'<div class="uinfo"><span class="uinfo-lbl">บริษัท</span><span class="uinfo-val">'+company+'</span></div>'
+    +'</div>'
+    +'<div class="time-used-badge"><div class="tub-lbl">เวลาที่ใช้'+(isAuto?' ⏰':'')+'</div><div class="tub-val">'+formatTimeFull(timeUsedSecs)+'</div></div></div>';
+  var dcards=dims.map(function(d){ var v=r.dimensions[d.key]||0; return '<div class="dim-card"><div class="dim-card-lbl" style="color:'+d.col+'">'+d.lbl+'</div><div class="dim-card-val" style="color:'+d.col+'">'+v+'<span style="font-size:14px;color:var(--muted)">/'+d.max+'</span></div><div class="dim-card-sub">'+Math.round(v/d.max*100)+'%</div></div>'; }).join('');
+  var bars=dims.map(function(d){ var v=r.dimensions[d.key]||0,p=Math.round(v/d.max*100); return '<div class="bar-row"><div class="bar-lbl">'+d.lbl+'</div><div class="bar-track"><div class="bar-fill" data-w="'+p+'%" style="width:0%;background:'+d.col+'"></div></div><div class="bar-pct" style="color:'+d.col+'">'+p+'%</div></div>'; }).join('');
+  var fbs=(r.questions||[]).map(function(q,i){ var p=q.score/q.maxScore,bc=p>=.75?'fb-hi':p>=.5?'fb-md':'fb-lo',ua=(answers[q.num]||'(ไม่ได้ตอบ)').replace(/</g,'&lt;'); return '<div class="fb-card"><div class="fb-top"><div class="fb-num">'+q.num+'</div><div class="fb-qtxt">'+QMeta[i].dim+' — '+QMeta[i].text+'</div><div class="fb-badge '+bc+'">'+q.score+'/'+q.maxScore+'</div></div><div class="fb-lbl">คำตอบของคุณ</div><div class="fb-ans">'+ua+'</div><div class="fb-lbl">ความเห็นจาก AI</div><div class="fb-cmt">'+q.feedback+'</div></div>'; }).join('');
+  var html=banner
+    +'<div class="score-hero"><div class="s-emoji">'+r.emoji+'</div><div class="s-level" style="color:'+col+'">'+r.level+'</div><div class="s-score-row"><div class="s-num" style="color:'+col+'">'+r.totalScore+'</div><div class="s-denom">&nbsp;/ 100</div></div><div class="s-desc">'+r.summary+'</div></div>'
+    +'<div class="dim-grid">'+dcards+'</div>'
+    +'<div class="bar-sec"><div class="bar-ttl">คะแนนรายด้าน</div>'+bars+'</div>'
+    +'<div class="sw-grid"><div class="sw-box"><div class="sw-lbl" style="color:var(--green)">✅ จุดเด่น</div><div class="sw-txt">'+r.strengths+'</div></div><div class="sw-box"><div class="sw-lbl" style="color:var(--orange)">📈 สิ่งที่ควรพัฒนา</div><div class="sw-txt">'+r.improvements+'</div></div></div>'
+    +'<div class="fb-ttl">📋 ผลตรวจรายข้อ</div>'+fbs
+    +'<div class="retry-row"><button class="btn-retry" onclick="doRetry()">🔄 ทำข้อสอบใหม่</button></div>';
+  document.getElementById('empty-result').style.display='none';
+  var rb=document.getElementById('result-body');
+  rb.innerHTML=html; rb.style.display='block';
+  setTimeout(function(){ document.querySelectorAll('.bar-fill').forEach(function(el){ el.style.width=el.getAttribute('data-w'); }); },150);
+}
+
+/* ══════════════════════════════════════
+   RENDER RECORDS TABLE
+══════════════════════════════════════ */
+var lvlClass={Excellent:'lv-ex',Good:'lv-gd',Satisfactory:'lv-sa','Needs Improvement':'lv-ni'};
+
+function renderRecordsTable(){
+  var tbody=document.getElementById('records-tbody');
+  var sec=document.getElementById('records-section');
+  var div=document.getElementById('records-divider');
+  sec.style.display='';
+  document.getElementById('rec-count').textContent='('+allRecords.length+' รายการ)';
+  if(allRecords.length===0){
+    tbody.innerHTML='<tr><td colspan="12"><div class="no-records"><div class="ico">📭</div>ยังไม่มีบันทึกผลการทดสอบ</div></td></tr>';
+    return;
+  }
+  if(document.getElementById('result-body').style.display!=='none') div.style.display='';
+  var rows=allRecords.map(function(r,i){
+    var lc=lvlClass[r.levelEn]||'lv-sa';
+    var scoreCol=r.totalScore>=90?'#34d399':r.totalScore>=75?'#7aaaf5':r.totalScore>=60?'#fb923c':'#f87171';
+    return '<tr>'
+      +'<td class="td-no">'+(i+1)+'</td>'
+      +'<td class="td-date">'+r.date+'</td>'
+      +'<td class="td-name">'+r.fname+' '+r.lname+'</td>'
+      +'<td class="td-dept">'+r.dept+'</td>'
+      +'<td class="td-dept">'+r.company+'</td>'
+      +'<td class="td-dim" style="color:#7aaaf5">'+r.prompt+'</td>'
+      +'<td class="td-dim" style="color:#34d399">'+r.application+'</td>'
+      +'<td class="td-dim" style="color:#fb923c">'+r.analysis+'</td>'
+      +'<td class="td-dim" style="color:#a78bfa">'+r.impact+'</td>'
+      +'<td class="td-score" style="color:'+scoreCol+'">'+r.totalScore+'</td>'
+      +'<td class="td-level"><span class="level-badge '+lc+'">'+r.level+'</span></td>'
+      +'<td class="td-time">'+r.timeUsed+(r.isAuto?' ⏰':'')+'</td>'
+      +'</tr>';
+  }).join('');
+  tbody.innerHTML=rows;
+}
+
+/* ══════════════════════════════════════
+   EXPORT EXCEL
+══════════════════════════════════════ */
+function exportExcel(){
+  if(allRecords.length===0){ showExportMsg('ไม่มีข้อมูลสำหรับ Export'); return; }
+  try {
+    var headers = ['ลำดับ','วันที่/เวลา','ชื่อ','นามสกุล','แผนก','บริษัท',
+      'Prompt (/25)','Application (/20)','Analysis (/40)','Business Impact (/15)',
+      'คะแนนรวม (/100)','ระดับ','เวลาที่ใช้','ส่งอัตโนมัติ'];
+    var rows = allRecords.map(function(r,i){
+      return [i+1, r.date, r.fname, r.lname, r.dept, r.company,
+        r.prompt, r.application, r.analysis, r.impact,
+        r.totalScore, r.level, r.timeUsed, r.isAuto?'ใช่':'ไม่'];
+    });
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet([headers].concat(rows));
+    ws['!cols'] = [{wch:6},{wch:16},{wch:14},{wch:14},{wch:14},{wch:20},
+      {wch:14},{wch:16},{wch:14},{wch:18},{wch:14},{wch:14},{wch:14},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, ws, 'ผลการทดสอบ');
+    var date = new Date().toISOString().slice(0,10);
+    // Use write → base64 → data URI to avoid blob CSP block
+    var wbout = XLSX.write(wb, { bookType:'xlsx', type:'base64' });
+    var a = document.createElement('a');
+    a.href = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + wbout;
+    a.download = 'HR_AI_Assessment_' + date + '.xlsx';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ document.body.removeChild(a); }, 200);
+  } catch(err) {
+    showExportMsg('Excel Error: ' + (err.message || err));
+  }
+}
+
+
+/* ══════════════════════════════════════
+   EXPORT PDF
+══════════════════════════════════════ */
+function exportPDF(){
+  if(allRecords.length===0){
+    showExportMsg('ไม่มีข้อมูลสำหรับ Export'); return;
+  }
+
+  try {
+    var doc = new jspdf.jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+    var pageW = doc.internal.pageSize.getWidth();  // 297mm
+    var margin = 12;
+    var usableW = pageW - margin * 2;              // 273mm
+
+    // ── Title block
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(15);
+    doc.setTextColor(201,168,76);
+    doc.text('HR AI Assessment - Results Report', margin, 15);
+
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8);
+    doc.setTextColor(120,140,160);
+    var now = new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    doc.text('Generated: ' + now + '   |   Records: ' + allRecords.length, margin, 22);
+
+    // ── Table — fixed widths that sum to <= usableW - (padding 4mm × 13 cols = 52mm) = 221mm
+    // Actual col widths sum: 6+20+16+16+15+18+11+11+13+11+12+15+13 = 177mm  (+52 = 229mm < 273mm) ✓
+    var head = [['#','Date','ชื่อ','นามสกุล','แผนก','บริษัท','Prompt\n/25','App\n/20','Analysis\n/40','Impact\n/15','รวม\n/100','ระดับ','เวลา']];
+    var body = allRecords.map(function(r,i){
+      return [
+        i+1,
+        r.date,
+        r.fname === '-' ? '' : r.fname,
+        r.lname === '-' ? '' : r.lname,
+        r.dept  === '-' ? '' : r.dept,
+        r.company === '-' ? '' : r.company,
+        r.prompt, r.application, r.analysis, r.impact,
+        r.totalScore,
+        r.level,
+        r.timeUsed + (r.isAuto ? ' *' : '')
+      ];
+    });
+
+    doc.autoTable({
+      head: head,
+      body: body,
+      startY: 27,
+      tableWidth: 'auto',
+      styles: {
+        font: 'helvetica', fontSize: 7.5,
+        cellPadding: 2,
+        textColor: [220,230,245],
+        fillColor: [19,38,61],
+        lineColor: [40,60,85],
+        lineWidth: 0.25,
+        overflow: 'linebreak',
+        minCellHeight: 8
+      },
+      headStyles: {
+        fillColor: [28,51,77],
+        textColor: [201,168,76],
+        fontStyle: 'bold',
+        fontSize: 7.5,
+        halign: 'center'
+      },
+      alternateRowStyles: { fillColor: [22,44,68] },
+      columnStyles: {
+        0:  { cellWidth: 6,  halign:'center' },
+        1:  { cellWidth: 20 },
+        2:  { cellWidth: 16 },
+        3:  { cellWidth: 16 },
+        4:  { cellWidth: 15 },
+        5:  { cellWidth: 18 },
+        6:  { cellWidth: 11, halign:'center' },
+        7:  { cellWidth: 11, halign:'center' },
+        8:  { cellWidth: 13, halign:'center' },
+        9:  { cellWidth: 11, halign:'center' },
+        10: { cellWidth: 12, halign:'center', fontStyle:'bold' },
+        11: { cellWidth: 15, halign:'center' },
+        12: { cellWidth: 13, halign:'center' }
+      },
+      margin: { left: margin, right: margin },
+      didParseCell: function(data){
+        if(data.section === 'body' && data.column.index === 10){
+          var sc = parseInt(data.cell.raw);
+          if(sc >= 90)      data.cell.styles.textColor = [52,211,153];
+          else if(sc >= 75) data.cell.styles.textColor = [91,141,238];
+          else if(sc >= 60) data.cell.styles.textColor = [251,146,60];
+          else              data.cell.styles.textColor = [248,113,113];
+        }
+      }
+    });
+
+    // ── Footer
+    var finalY = doc.lastAutoTable.finalY + 6;
+    if(finalY > doc.internal.pageSize.getHeight() - 10) finalY = doc.internal.pageSize.getHeight() - 8;
+    doc.setFontSize(7); doc.setTextColor(100,120,140);
+    doc.text('* = Auto-submitted (time expired)  |  HR AI Assessment System', margin, finalY);
+
+    // ── Download — use data URI + anchor (avoids blob URL CSP block in iframe)
+    var filename = 'HR_AI_Assessment_' + new Date().toISOString().slice(0,10) + '.pdf';
+    var dataUri = doc.output('datauristring');
+    var a = document.createElement('a');
+    a.href = dataUri;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ document.body.removeChild(a); }, 200);
+
+  } catch(err) {
+    showExportMsg('PDF Error: ' + (err.message || err));
+  }
+}
+
+function showExportMsg(msg){
+  var el = document.getElementById('export-msg');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'export-msg';
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1c334d;border:1px solid rgba(248,113,113,.4);color:#f87171;padding:12px 24px;border-radius:10px;font-size:13px;z-index:500;max-width:400px;text-align:center;';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.style.display='none'; }, 4000);
+}
+
+/* ══════════════════════════════════════
+   RETRY
+══════════════════════════════════════ */
+function doRetry(){
+  answers={1:'',2:'',3:'',4:'',5:''};
+  remainSecs=TOTAL_SECS; timeUsedSecs=0;
+  isPaused=false; timerExpired=false; submitTriggered=false;
+  for(var i=1;i<=5;i++){
+    var ta=document.getElementById('a'+i); ta.value=''; ta.disabled=false;
+    document.getElementById('cc'+i).textContent='0 ตัวอักษร';
+    document.getElementById('dot'+i).classList.remove('done'); document.getElementById('dot'+i).textContent=i;
+    document.getElementById('card-'+i).classList.remove('filled');
+  }
+  ['f-fname','f-lname','f-dept','f-company'].forEach(function(id){ var el=document.getElementById(id); el.value=''; el.disabled=false; el.classList.remove('filled'); });
+  document.getElementById('timerDisplay').textContent='10:00';
+  var tb=document.getElementById('timerBox'); tb.classList.remove('warn','danger'); tb.style.opacity='1';
+  var bp=document.getElementById('btnPause'); bp.textContent='⏸ หยุด'; bp.classList.remove('paused'); bp.disabled=false;
+  document.getElementById('result-body').style.display='none';
+  document.getElementById('empty-result').style.display='';
+  document.getElementById('btn-result').classList.add('locked');
+  document.getElementById('result-icon').textContent='🔒';
+  document.getElementById('records-divider').style.display='none';
+  refreshProgress(); switchTab('exam');
+  window.scrollTo({top:0,behavior:'smooth'});
+  clearInterval(timerInterval); startTimer();
+  renderRecordsTable();
 }
 </script>
 
+<!-- CLEAR RECORDS MODAL -->
+<div id="clear-modal" style="display:none;position:fixed;inset:0;background:rgba(11,22,34,.88);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(6px);">
+  <div style="background:#1c334d;border:1px solid rgba(248,113,113,.3);border-radius:20px;padding:36px 32px;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);">
+    <div style="font-size:46px;margin-bottom:12px;">🗑️</div>
+    <div style="font-family:'Noto Serif Thai',serif;font-size:20px;font-weight:700;color:#f87171;margin-bottom:10px;">ล้างข้อมูลทั้งหมด</div>
+    <div style="font-size:13.5px;color:#7a8fa8;line-height:1.75;margin-bottom:22px;">คุณต้องการล้างข้อมูลทั้งหมดในตารางนี้หรือไม่?<br>กรุณาใส่รหัสยืนยันเพื่อดำเนินการ</div>
+    <input id="clear-pin-input" type="password" maxlength="10"
+      placeholder="ใส่รหัสยืนยัน"
+      onkeydown="if(event.key==='Enter') confirmClear()"
+      style="width:100%;background:rgba(11,22,34,.7);border:1px solid rgba(255,255,255,0.12);border-radius:9px;color:#eef4ff;font-family:'Sarabun',sans-serif;font-size:16px;padding:12px 15px;outline:none;text-align:center;letter-spacing:4px;margin-bottom:10px;transition:border-color .2s;">
+    <div id="clear-pin-error" style="display:none;font-size:12.5px;color:#f87171;margin-bottom:14px;min-height:18px;"></div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:4px;">
+      <button onclick="confirmClear()"
+        style="background:linear-gradient(135deg,#f87171,#e85555);color:#fff;border:none;padding:12px 30px;border-radius:9px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .25s;">
+        ✅ ยืนยัน
+      </button>
+      <button onclick="closeClearModal()"
+        style="background:none;border:1px solid rgba(255,255,255,.15);color:#7a8fa8;padding:12px 24px;border-radius:9px;font-family:'Sarabun',sans-serif;font-size:14px;cursor:pointer;transition:all .25s;">
+        ยกเลิก
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CHEAT WARNING MODAL -->
+<div id="cheat-modal" style="display:none;position:fixed;inset:0;background:rgba(11,22,34,.92);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(8px);">
+  <div style="background:#1c334d;border:2px solid rgba(248,113,113,.5);border-radius:20px;padding:40px 32px;max-width:420px;width:92%;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);animation:shake .35s ease;">
+    <div style="font-size:54px;margin-bottom:14px;">🚫</div>
+    <div style="font-family:'Noto Serif Thai',serif;font-size:20px;font-weight:700;color:#f87171;margin-bottom:16px;line-height:1.4;">ข้อความแจ้งเตือน!</div>
+    <div style="font-size:14.5px;color:#eef4ff;line-height:1.85;margin-bottom:26px;">
+      คุณกำลังจะทุจริตการทำแบบทดสอบนี้อยู่<br>
+      กรุณาใช้ความรู้ ความสามารถตัวเองในการทำแบบทดสอบนี้<br>
+      <span style="color:#c9a84c;font-weight:700;">ด้วยความเคารพ !</span>
+    </div>
+    <button onclick="closeCheatModal()"
+      style="background:linear-gradient(135deg,#c9a84c,#e6c96a);color:#0b1622;border:none;padding:13px 44px;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .25s;box-shadow:0 4px 16px rgba(201,168,76,.3);">
+      รับทราบ
+    </button>
+  </div>
+</div>
+<style>
+@keyframes shake{
+  0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-8px);}
+  40%{transform:translateX(8px);}
+  60%{transform:translateX(-5px);}
+  80%{transform:translateX(5px);}
+}
+</style>
 </body>
-</html>
+</html>อันนี้โค้ดของ index.html ต้องแก้อะไรไหม ?

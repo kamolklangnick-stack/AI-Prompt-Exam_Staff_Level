@@ -11,61 +11,62 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
-    if (request.method === "GET") {
-      return new Response(JSON.stringify({ ok: true }), {
-        headers: { "Content-Type": "application/json", ...corsHeaders }
-      });
-    }
-
     if (request.method !== "POST") {
-      return new Response("Method Not Allowed", { status: 405 });
+      return new Response("OK", { headers: corsHeaders });
     }
 
     try {
       const body = await request.json();
       const prompt = body.prompt || "";
 
-      const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${env.OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "user",
-              content: prompt
-            }
-          ],
-          temperature: 0.3
-        })
-      });
+      const resp = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-goog-api-key": env.GEMINI_API_KEY
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        }
+      );
 
       const data = await resp.json();
 
       let text = "";
-      if (data.choices && data.choices[0]) {
-        text = data.choices[0].message.content;
+
+      if (
+        data.candidates &&
+        data.candidates[0] &&
+        data.candidates[0].content &&
+        data.candidates[0].content.parts
+      ) {
+        data.candidates[0].content.parts.forEach(p => {
+          if (p.text) text += p.text;
+        });
+      }
+
+      // 🔥 FIX สำคัญ
+      if (!text || !text.trim()) {
+        text = JSON.stringify(data); // fallback
       }
 
       return new Response(JSON.stringify({
         ok: true,
-        text: text,
-        raw: data
+        text: text
       }), {
-        status: 200,
         headers: {
           "Content-Type": "application/json",
           ...corsHeaders
         }
       });
 
-    } catch (err) {
+    } catch (e) {
       return new Response(JSON.stringify({
         ok: false,
-        error: err.message
+        text: "ERROR: " + e.message
       }), {
         status: 500,
         headers: corsHeaders

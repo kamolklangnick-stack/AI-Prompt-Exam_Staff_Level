@@ -406,6 +406,8 @@ textarea:disabled{opacity:.5;cursor:not-allowed;resize:none;}
    วาง Anthropic API Key ของคุณแทน YOUR_API_KEY_HERE
    รับได้ที่ https://console.anthropic.com/settings/keys
 ═══════════════════════════════════════════════ */
+/* Worker URL ของคุณบน Cloudflare */
+var WORKER_URL = 'https://aged-disk-25db.kamolklang-nick.workers.dev';
 var GEMINI_API_KEY = 'AIzaSyA4Oh5U011tdO8Hr3gdmPmGJRW9lmSCvs8';
 
 var answers = {1:'',2:'',3:'',4:'',5:''};
@@ -622,15 +624,11 @@ async function doSubmit(isAuto){
     + '{"totalScore":<number>,"level":"<ภาษาไทย>","levelEn":"<Excellent|Good|Satisfactory|Needs Improvement>","emoji":"<emoji>","summary":"<สรุป 2-3 ประโยคภาษาไทย>","dimensions":{"prompt":<0-25>,"application":<0-20>,"analysis":<0-40>,"impact":<0-15>},"questions":[{"num":1,"score":<number>,"maxScore":25,"feedback":"<2 ประโยคภาษาไทย>"},{"num":2,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":3,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":4,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":5,"score":<number>,"maxScore":15,"feedback":"<2 ประโยคภาษาไทย>"}],"strengths":"<จุดเด่น 1-2 ข้อภาษาไทย>","improvements":"<สิ่งที่ควรพัฒนา 1-2 ข้อภาษาไทย>"}';
 
   try {
-    // ── Plain fetch — NO AbortSignal (not cloneable in iframe postMessage)
-    var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY;
-    var resp = await fetch(geminiUrl, {
+    // ── เรียกผ่าน Cloudflare Worker (แก้ปัญหา CORS บน GitHub Pages)
+    var resp = await fetch(WORKER_URL, {
       method : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({
-        contents: [{ parts: [{ text: userContent }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
-      })
+      body   : JSON.stringify({ prompt: userContent })
     });
 
     clearInterval(ivl);
@@ -638,14 +636,15 @@ async function doSubmit(isAuto){
     if (!resp.ok) {
       var errBody = '';
       try { errBody = await resp.text(); } catch(_){}
+      try { var ej = JSON.parse(errBody); if(ej.error) throw new Error(ej.error); } catch(_){}
       throw new Error('HTTP ' + resp.status + ': ' + errBody.slice(0,200));
     }
 
     var data = await resp.json();
+    if (data.error) throw new Error('Gemini: ' + data.error);
 
-    // extract text from Gemini response
-    var raw = '';
-    try { raw = data.candidates[0].content.parts[0].text; } catch(_){}
+    // Worker ส่ง { text: "..." } กลับมา
+    var raw = data.text || '';
     if (!raw) throw new Error('AI ไม่ส่งข้อความกลับมา กรุณาลองใหม่');
 
     // strip markdown fences, find outermost { }

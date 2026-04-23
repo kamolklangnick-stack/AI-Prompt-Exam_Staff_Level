@@ -402,10 +402,6 @@ textarea:disabled{opacity:.5;cursor:not-allowed;resize:none;}
 /* ══════════════════════════════════════
    STATE
 ══════════════════════════════════════ */
-/* ══ API KEY — แก้ไขตรงนี้ ══════════════════════
-   วาง Anthropic API Key ของคุณแทน YOUR_API_KEY_HERE
-   รับได้ที่ https://console.anthropic.com/settings/keys
-═══════════════════════════════════════════════ */
 /* Worker URL ของคุณบน Cloudflare */
 var WORKER_URL = 'https://aged-disk-25db.kamolklang-nick.workers.dev';
 
@@ -455,14 +451,17 @@ window.addEventListener('DOMContentLoaded', function(){
 ══════════════════════════════════════ */
 async function loadRecords(){
   try{
-    var res = await window.storage.get(STORAGE_KEY);
-    if(res && res.value){ allRecords = JSON.parse(res.value); }
-  } catch(e){ allRecords = []; }
+    allRecords = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  } catch(e){
+    allRecords = [];
+  }
   renderRecordsTable();
 }
 
 async function saveRecords(){
-  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(allRecords)); }catch(e){}
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(allRecords));
+  } catch(e){}
 }
 
 function clearRecords(){
@@ -484,7 +483,7 @@ async function confirmClear(){
   }
   closeClearModal();
   allRecords = [];
-  try{ await window.storage.delete(STORAGE_KEY); }catch(e){}
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
   renderRecordsTable();
   showExportMsg('✅ ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว');
 }
@@ -603,27 +602,47 @@ async function doSubmit(isAuto){
   var dept    = document.getElementById('f-dept').value.trim()    || '-';
   var company = document.getElementById('f-company').value.trim() || '-';
 
-  var userContent = 'คุณเป็นผู้ตรวจข้อสอบ HR AI Assessment ระดับ Staff\n'
-    + 'ผู้สอบ: ' + fname + ' ' + lname + ' | แผนก: ' + dept + ' | บริษัท: ' + company + '\n'
-    + 'เวลาที่ใช้: ' + formatTimeFull(timeUsedSecs) + (isAuto ? ' (หมดเวลาอัตโนมัติ)' : '') + '\n\n'
-    + 'ข้อสอบ:\n'
-    + 'ข้อ 1 [Prompt Writing, 25 คะแนน]: เขียน Prompt สร้างแบบประเมินพนักงานประจำปี HR Staff\n'
-    + 'ข้อ 2 [Application, 20 คะแนน]: 3 ขั้นตอนนำ AI ช่วยงาน Recruitment\n'
-    + 'ข้อ 3 [Analysis, 20 คะแนน]: ปรับปรุง Prompt วิเคราะห์ข้อมูลพนักงาน\n'
-    + 'ข้อ 4 [Analysis, 20 คะแนน]: ใช้ AI วิเคราะห์ Turnover Rate สูงขึ้น 15%\n'
-    + 'ข้อ 5 [Business Impact, 15 คะแนน]: ผลกระทบ AI ใน HR และข้อควรระวัง\n\n'
-    + 'คำตอบผู้สอบ:\n'
-    + 'ข้อ 1: ' + (answers[1] || '(ไม่ได้ตอบ)') + '\n'
-    + 'ข้อ 2: ' + (answers[2] || '(ไม่ได้ตอบ)') + '\n'
-    + 'ข้อ 3: ' + (answers[3] || '(ไม่ได้ตอบ)') + '\n'
-    + 'ข้อ 4: ' + (answers[4] || '(ไม่ได้ตอบ)') + '\n'
-    + 'ข้อ 5: ' + (answers[5] || '(ไม่ได้ตอบ)') + '\n\n'
-    + 'ระดับ: 90-100=ดีเยี่ยม, 75-89=ดี, 60-74=พอใช้, <60=ต้องพัฒนา\n\n'
-    + 'ตอบเป็น JSON เท่านั้น ห้ามมี markdown หรือข้อความอื่นนอก JSON:\n'
+  var userContent = 'คุณเป็นผู้ตรวจข้อสอบ HR AI Assessment ระดับ Staff
+'
+    + 'ผู้สอบ: ' + fname + ' ' + lname + ' | แผนก: ' + dept + ' | บริษัท: ' + company + '
+'
+    + 'เวลาที่ใช้: ' + formatTimeFull(timeUsedSecs) + (isAuto ? ' (หมดเวลาอัตโนมัติ)' : '') + '
+
+'
+    + 'ข้อสอบ:
+'
+    + 'ข้อ 1 [Prompt Writing, 25 คะแนน]: เขียน Prompt สร้างแบบประเมินพนักงานประจำปี HR Staff
+'
+    + 'ข้อ 2 [Application, 20 คะแนน]: 3 ขั้นตอนนำ AI ช่วยงาน Recruitment
+'
+    + 'ข้อ 3 [Analysis, 20 คะแนน]: ปรับปรุง Prompt วิเคราะห์ข้อมูลพนักงาน
+'
+    + 'ข้อ 4 [Analysis, 20 คะแนน]: ใช้ AI วิเคราะห์ Turnover Rate สูงขึ้น 15%
+'
+    + 'ข้อ 5 [Business Impact, 15 คะแนน]: ผลกระทบ AI ใน HR และข้อควรระวัง
+
+'
+    + 'คำตอบผู้สอบ:
+'
+    + 'ข้อ 1: ' + (answers[1] || '(ไม่ได้ตอบ)') + '
+'
+    + 'ข้อ 2: ' + (answers[2] || '(ไม่ได้ตอบ)') + '
+'
+    + 'ข้อ 3: ' + (answers[3] || '(ไม่ได้ตอบ)') + '
+'
+    + 'ข้อ 4: ' + (answers[4] || '(ไม่ได้ตอบ)') + '
+'
+    + 'ข้อ 5: ' + (answers[5] || '(ไม่ได้ตอบ)') + '
+
+'
+    + 'ระดับ: 90-100=ดีเยี่ยม, 75-89=ดี, 60-74=พอใช้, <60=ต้องพัฒนา
+
+'
+    + 'ตอบเป็น JSON เท่านั้น ห้ามมี markdown หรือข้อความอื่นนอก JSON:
+'
     + '{"totalScore":<number>,"level":"<ภาษาไทย>","levelEn":"<Excellent|Good|Satisfactory|Needs Improvement>","emoji":"<emoji>","summary":"<สรุป 2-3 ประโยคภาษาไทย>","dimensions":{"prompt":<0-25>,"application":<0-20>,"analysis":<0-40>,"impact":<0-15>},"questions":[{"num":1,"score":<number>,"maxScore":25,"feedback":"<2 ประโยคภาษาไทย>"},{"num":2,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":3,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":4,"score":<number>,"maxScore":20,"feedback":"<2 ประโยคภาษาไทย>"},{"num":5,"score":<number>,"maxScore":15,"feedback":"<2 ประโยคภาษาไทย>"}],"strengths":"<จุดเด่น 1-2 ข้อภาษาไทย>","improvements":"<สิ่งที่ควรพัฒนา 1-2 ข้อภาษาไทย>"}';
 
   try {
-    // ── เรียกผ่าน Cloudflare Worker (แก้ปัญหา CORS บน GitHub Pages)
     var resp = await fetch(WORKER_URL, {
       method : 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -632,28 +651,40 @@ async function doSubmit(isAuto){
 
     clearInterval(ivl);
 
+    var data = await resp.json();
+    console.log('Worker response:', data);
+
     if (!resp.ok) {
-      var errBody = '';
-      try { errBody = await resp.text(); } catch(_){}
-      try { var ej = JSON.parse(errBody); if(ej.error) throw new Error(ej.error); } catch(_){}
-      throw new Error('HTTP ' + resp.status + ': ' + errBody.slice(0,200));
+      throw new Error('HTTP ' + resp.status + ': ' + JSON.stringify(data));
     }
 
-    var data = await resp.json();
-    if (data.error) throw new Error('Gemini: ' + data.error);
+    if (data.ok === false) {
+      throw new Error(data.error || 'Worker returned error');
+    }
 
-    // Worker ส่ง { text: "..." } กลับมา
-    var raw = data.text || '';
-    if (!raw) throw new Error('AI ไม่ส่งข้อความกลับมา กรุณาลองใหม่');
+    var raw = '';
+    if (typeof data.text === 'string' && data.text.trim()) {
+      raw = data.text.trim();
+    }
 
-    // strip markdown fences, find outermost { }
+    if (!raw) {
+      throw new Error('AI ไม่ส่งข้อความกลับมา กรุณาดู Response ใน Network/Console');
+    }
+
     var clean = raw.replace(/```json/gi,'').replace(/```/g,'').trim();
-    var j0 = clean.indexOf('{'), j1 = clean.lastIndexOf('}');
-    if (j0 === -1 || j1 === -1) throw new Error('ไม่พบ JSON ในคำตอบ:\n' + clean.slice(0,120));
+    var j0 = clean.indexOf('{');
+    var j1 = clean.lastIndexOf('}');
+
+    if (j0 === -1 || j1 === -1) {
+      throw new Error('ไม่พบ JSON ในคำตอบ:
+' + clean.slice(0, 500));
+    }
+
     var result = JSON.parse(clean.slice(j0, j1 + 1));
 
-    // validate required fields
-    if (typeof result.totalScore !== 'number') throw new Error('JSON ไม่ครบ: ขาด totalScore');
+    if (typeof result.totalScore !== 'number') {
+      throw new Error('JSON ไม่ครบ: ขาด totalScore');
+    }
 
     document.getElementById('overlay').classList.remove('on');
 

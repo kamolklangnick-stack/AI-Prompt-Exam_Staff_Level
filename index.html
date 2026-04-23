@@ -869,8 +869,7 @@ async function doSubmit(isAuto){
     'ข้อ 3: ' + (answers[3] || '(ไม่ได้ตอบ)'),
     'ข้อ 4: ' + (answers[4] || '(ไม่ได้ตอบ)'),
     'ข้อ 5: ' + (answers[5] || '(ไม่ได้ตอบ)')
-  ].join('
-');
+  ].join('\n');
 
   try {
     var resp = await fetch(WORKER_URL, {
@@ -895,8 +894,7 @@ async function doSubmit(isAuto){
 
     var clean = raw.replace(/```json/gi,'').replace(/```/g,'').trim();
     var j0 = clean.indexOf('{'), j1 = clean.lastIndexOf('}');
-    if (j0 === -1 || j1 === -1) throw new Error('ไม่พบ JSON ในคำตอบ:
-' + clean.slice(0,300));
+    if (j0 === -1 || j1 === -1) throw new Error('ไม่พบ JSON ในคำตอบ:\n' + clean.slice(0,300));
     var result = JSON.parse(clean.slice(j0, j1 + 1));
     if (typeof result.totalScore !== 'number') throw new Error('JSON ไม่ครบ: ขาด totalScore');
 

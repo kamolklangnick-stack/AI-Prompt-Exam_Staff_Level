@@ -1,5 +1,12 @@
 {
   "name": "aged-disk-25db",
   "main": "worker.js",
-  "compatibility_date": "2026-04-23"
+  "compatibility_date": "2026-04-23",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hr-ai-assessment-db",
+      "database_id": "cc270b8b-a312-475a-83bd-8f22c7971bb1"
+    }
+  ]
 }

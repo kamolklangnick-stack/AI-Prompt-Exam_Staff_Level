@@ -6,117 +6,9 @@
 <title>แบบทดสอบ HR AI — Prompt & Application</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;600;700&display=swap" rel="stylesheet">
 <!-- Libraries -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
-// 🔥 Global anti-cheat for desktop + mobile
-['copy','paste','cut'].forEach(function(evt){
-  document.addEventListener(evt, function(e){
-    var el = document.activeElement;
-    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
-      e.preventDefault();
-      showCheatWarning();
-      return false;
-    }
-  });
-});
-
-document.addEventListener('keydown', function(e){
-  var k = (e.key || '').toLowerCase();
-  if((e.ctrlKey || e.metaKey) && ['v','c','x','a'].includes(k)){
-    var el = document.activeElement;
-    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
-      e.preventDefault();
-      showCheatWarning();
-      return false;
-    }
-  }
-});
-
-document.addEventListener('beforeinput', function(e){
-  if(e && e.inputType && ['insertFromPaste','insertFromDrop','deleteByCut'].includes(e.inputType)){
-    var el = document.activeElement;
-    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
-      e.preventDefault();
-      showCheatWarning();
-      return false;
-    }
-  }
-});
-
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js">
-// 🔥 Global anti-cheat for desktop + mobile
-['copy','paste','cut'].forEach(function(evt){
-  document.addEventListener(evt, function(e){
-    var el = document.activeElement;
-    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
-      e.preventDefault();
-      showCheatWarning();
-      return false;
-    }
-  });
-});
-
-document.addEventListener('keydown', function(e){
-  var k = (e.key || '').toLowerCase();
-  if((e.ctrlKey || e.metaKey) && ['v','c','x','a'].includes(k)){
-    var el = document.activeElement;
-    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
-      e.preventDefault();
-      showCheatWarning();
-      return false;
-    }
-  }
-});
-
-document.addEventListener('beforeinput', function(e){
-  if(e && e.inputType && ['insertFromPaste','insertFromDrop','deleteByCut'].includes(e.inputType)){
-    var el = document.activeElement;
-    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
-      e.preventDefault();
-      showCheatWarning();
-      return false;
-    }
-  }
-});
-
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
-// 🔥 Global anti-cheat for desktop + mobile
-['copy','paste','cut'].forEach(function(evt){
-  document.addEventListener(evt, function(e){
-    var el = document.activeElement;
-    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
-      e.preventDefault();
-      showCheatWarning();
-      return false;
-    }
-  });
-});
-
-document.addEventListener('keydown', function(e){
-  var k = (e.key || '').toLowerCase();
-  if((e.ctrlKey || e.metaKey) && ['v','c','x','a'].includes(k)){
-    var el = document.activeElement;
-    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
-      e.preventDefault();
-      showCheatWarning();
-      return false;
-    }
-  }
-});
-
-document.addEventListener('beforeinput', function(e){
-  if(e && e.inputType && ['insertFromPaste','insertFromDrop','deleteByCut'].includes(e.inputType)){
-    var el = document.activeElement;
-    if(el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')){
-      e.preventDefault();
-      showCheatWarning();
-      return false;
-    }
-  }
-});
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#0b1622;--surface:#13263d;--surface2:#1c334d;
@@ -344,6 +236,32 @@ textarea:disabled{opacity:.5;cursor:not-allowed;resize:none;}
 /* divider */
 .divider{height:1px;background:var(--border);margin:32px 0;}
 
+
+/* ── ADMIN DASHBOARD ── */
+.admin-wrap{max-width:920px;margin:0 auto;padding:30px 24px 70px;}
+.admin-gate{background:var(--surface);border:1px solid rgba(201,168,76,0.2);border-radius:16px;padding:28px;text-align:center;color:var(--muted);}
+.admin-gate .big{font-size:42px;margin-bottom:12px;}
+.admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;}
+.admin-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.admin-card .lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.admin-card .val{font-family:'Noto Serif Thai',serif;font-size:28px;font-weight:700;color:var(--goldL);}
+.admin-card .sub{font-size:12px;color:var(--muted);margin-top:6px;}
+.admin-panels{display:grid;grid-template-columns:1.2fr 1fr;gap:14px;margin-bottom:18px;}
+.admin-panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;}
+.admin-ttl{font-family:'Noto Serif Thai',serif;font-size:16px;font-weight:700;color:var(--goldL);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.rank-table,.breakdown-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.rank-table th,.rank-table td,.breakdown-table th,.breakdown-table td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.05);text-align:left;}
+.rank-table th,.breakdown-table th{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+.kpi-bars{display:grid;gap:10px;}
+.kpi-bar{background:rgba(11,22,34,.55);border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:10px 12px;}
+.kpi-bar-top{display:flex;justify-content:space-between;gap:10px;font-size:12px;margin-bottom:8px;}
+.kpi-bar-track{height:8px;background:var(--border);border-radius:999px;overflow:hidden;}
+.kpi-bar-fill{height:100%;border-radius:999px;}
+.admin-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-bottom:14px;}
+.btn-admin{display:flex;align-items:center;gap:7px;padding:10px 18px;border-radius:9px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .25s;border:none;background:rgba(91,141,238,.12);border:1px solid rgba(91,141,238,.35);color:#7aaaf5;}
+.btn-admin:hover{background:rgba(91,141,238,.2);transform:translateY(-1px);}
+@media(max-width:680px){.admin-panels{grid-template-columns:1fr;}.admin-wrap{padding-left:14px;padding-right:14px;}}
+
 @media(max-width:680px){
   .info-grid{grid-template-columns:1fr;}
   .sw-grid{grid-template-columns:1fr;}
@@ -378,6 +296,7 @@ textarea:disabled{opacity:.5;cursor:not-allowed;resize:none;}
   <div class="tab-nav">
     <button class="tab-btn active" id="btn-exam" onclick="switchTab('exam')">📝 ทำข้อสอบ <span class="badge" id="exam-badge">0/5</span></button>
     <button class="tab-btn locked" id="btn-result" onclick="switchTab('result')">📊 ผลลัพธ์ &amp; การตรวจ <span id="result-icon">🔒</span></button>
+    <button class="tab-btn" id="btn-admin" onclick="openAdminDashboard()">🛡️ Dashboard ผู้บริหาร <span class="badge">Admin</span></button>
   </div>
 </div>
 
@@ -480,6 +399,97 @@ textarea:disabled{opacity:.5;cursor:not-allowed;resize:none;}
   </div>
 </div>
 
+
+<!-- ══ ADMIN PANE ══ -->
+<div class="tab-pane" id="pane-admin">
+  <div class="admin-wrap">
+    <div id="admin-gate" class="admin-gate">
+      <div class="big">🛡️</div>
+      <div>แท็บนี้สำหรับผู้ดูแลระบบเท่านั้น<br>กรุณาใส่รหัสเพื่อดู Dashboard ผู้บริหาร</div>
+    </div>
+
+    <div id="admin-body" style="display:none">
+      <div class="admin-actions">
+        <button class="btn-admin" onclick="promptAdminAccess(true)">🔐 เปลี่ยนรหัสเข้าใหม่</button>
+        <button class="btn-admin" onclick="exportAdminExcel()">📊 ดาวน์โหลด Dashboard Excel</button>
+      </div>
+
+      <div class="admin-grid">
+        <div class="admin-card"><div class="lbl">ผู้เข้าสอบล่าสุด</div><div class="val" id="sum-total">0</div><div class="sub">นับเฉพาะผลล่าสุดต่อคน</div></div>
+        <div class="admin-card"><div class="lbl">คะแนนเฉลี่ย</div><div class="val" id="sum-avg">0</div><div class="sub">คะแนนรวมเฉลี่ย /100</div></div>
+        <div class="admin-card"><div class="lbl">คะแนนสูงสุด</div><div class="val" id="sum-max">0</div><div class="sub">คะแนนสูงสุดที่ได้</div></div>
+        <div class="admin-card"><div class="lbl">ต้องพัฒนา</div><div class="val" id="sum-risk">0</div><div class="sub">ระดับต้องพัฒนา</div></div>
+      </div>
+
+      <div class="admin-panels">
+        <div class="admin-panel">
+          <div class="admin-ttl">🏆 Ranking ตามผลคะแนน <span id="rank-count" style="font-size:11px;color:var(--muted);font-family:'Sarabun',sans-serif;"></span></div>
+          <div class="table-wrapper">
+            <table class="rank-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>ชื่อ-นามสกุล</th>
+                  <th>แผนก</th>
+                  <th>บริษัท</th>
+                  <th>คะแนน</th>
+                  <th>ระดับ</th>
+                </tr>
+              </thead>
+              <tbody id="rank-tbody">
+                <tr><td colspan="6"><div class="no-records"><div class="ico">📭</div>ยังไม่มีข้อมูล</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel">
+          <div class="admin-ttl">📈 สัดส่วนผลลัพธ์</div>
+          <div class="kpi-bars" id="level-bars"></div>
+        </div>
+      </div>
+
+      <div class="admin-panels">
+        <div class="admin-panel">
+          <div class="admin-ttl">🏢 สรุปตามบริษัท</div>
+          <div class="table-wrapper">
+            <table class="breakdown-table">
+              <thead>
+                <tr>
+                  <th>บริษัท</th>
+                  <th>คน</th>
+                  <th>เฉลี่ย</th>
+                </tr>
+              </thead>
+              <tbody id="company-tbody">
+                <tr><td colspan="3"><div class="no-records"><div class="ico">📭</div>ยังไม่มีข้อมูล</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel">
+          <div class="admin-ttl">🏷️ สรุปตามแผนก</div>
+          <div class="table-wrapper">
+            <table class="breakdown-table">
+              <thead>
+                <tr>
+                  <th>แผนก</th>
+                  <th>คน</th>
+                  <th>เฉลี่ย</th>
+                </tr>
+              </thead>
+              <tbody id="dept-tbody">
+                <tr><td colspan="3"><div class="no-records"><div class="ico">📭</div>ยังไม่มีข้อมูล</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- LOADING OVERLAY -->
 <div class="overlay" id="overlay">
   <div id="ov-loading" style="display:flex;flex-direction:column;align-items:center;gap:16px;">
@@ -527,6 +537,8 @@ var timeUsedSecs = 0;
 var submitTriggered = false;
 var allRecords = [];
 var STORAGE_KEY = 'hr_exam_records';
+var adminUnlocked = false;
+var ADMIN_PIN = '134300';
 
 /* ══════════════════════════════════════
    INIT
@@ -573,7 +585,6 @@ window.addEventListener('DOMContentLoaded', function(){
   }
 
   startTimer();
-  loadRecords();
   loadRecordsFromDB();
 });
 
@@ -743,11 +754,37 @@ function refreshProgress(){
    TAB
 ══════════════════════════════════════ */
 function switchTab(t){
-  var e=(t==='exam');
-  document.getElementById('btn-exam').classList.toggle('active',e);
-  document.getElementById('btn-result').classList.toggle('active',!e);
-  document.getElementById('pane-exam').classList.toggle('active',e);
-  document.getElementById('pane-result').classList.toggle('active',!e);
+  var tabs=['exam','result','admin'];
+  tabs.forEach(function(name){
+    var btn=document.getElementById('btn-'+name);
+    var pane=document.getElementById('pane-'+name);
+    if(btn) btn.classList.toggle('active', name===t);
+    if(pane) pane.classList.toggle('active', name===t);
+  });
+}
+
+function openAdminDashboard(){
+  if(!adminUnlocked){
+    if(!promptAdminAccess()) return;
+  }
+  renderAdminDashboard();
+  switchTab('admin');
+}
+
+function promptAdminAccess(force){
+  if(force) adminUnlocked = false;
+  var pin = prompt('กรอกรหัสสำหรับเข้า Dashboard ผู้บริหาร');
+  if(pin === null) return false;
+  if(String(pin).trim() !== ADMIN_PIN){
+    alert('รหัสไม่ถูกต้อง');
+    return false;
+  }
+  adminUnlocked = true;
+  var gate = document.getElementById('admin-gate');
+  var body = document.getElementById('admin-body');
+  if(gate) gate.style.display = 'none';
+  if(body) body.style.display = 'block';
+  return true;
 }
 
 /* ══════════════════════════════════════
@@ -821,11 +858,11 @@ async function doSubmit(isAuto){
   }
 
   try {
-    var resp = await fetchWithRetry(WORKER_URL, {
+    var resp = await fetch(WORKER_URL, {
       method : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ prompt: userContent, answers: answers })
-    }, 2);
+      body   : JSON.stringify({ action: 'grade', prompt: userContent, answers: answers })
+    });
 
     clearInterval(ivl);
 
@@ -862,9 +899,6 @@ async function doSubmit(isAuto){
       timeUsedSecs: timeUsedSecs,
       isAuto: isAuto
     };
-    allRecords.unshift(rec);
-    await saveRecords();
-
     try{
       await fetch(WORKER_URL, {
         method: 'POST',
@@ -888,6 +922,7 @@ async function doSubmit(isAuto){
         })
       });
       await loadRecordsFromDB();
+      renderAdminDashboard();
     }catch(dbErr){
       console.log('save DB error', dbErr);
     }
@@ -997,18 +1032,39 @@ function renderResult(r,fname,lname,dept,company,isAuto){
 ══════════════════════════════════════ */
 var lvlClass={Excellent:'lv-ex',Good:'lv-gd',Satisfactory:'lv-sa','Needs Improvement':'lv-ni'};
 
+function getLatestOnlyRecords(rows){
+  var map = {};
+  (rows || []).forEach(function(r){
+    var key = ((r.fname || '').trim().toLowerCase()) + '|' + ((r.lname || '').trim().toLowerCase());
+    if(!key || key === '|') return;
+    var currentTime = new Date(r.date || 0).getTime() || Number(r.id || 0) || 0;
+    var prev = map[key];
+    var prevTime = prev ? (new Date(prev.date || 0).getTime() || Number(prev.id || 0) || 0) : -1;
+    if(!prev || currentTime >= prevTime){
+      map[key] = r;
+    }
+  });
+  return Object.keys(map).map(function(k){ return map[k]; }).sort(function(a,b){
+    var ta = new Date(a.date || 0).getTime() || Number(a.id || 0) || 0;
+    var tb = new Date(b.date || 0).getTime() || Number(b.id || 0) || 0;
+    return tb - ta;
+  });
+}
+
 function renderRecordsTable(){
   var tbody=document.getElementById('records-tbody');
   var sec=document.getElementById('records-section');
   var div=document.getElementById('records-divider');
+  var latest = getLatestOnlyRecords(allRecords);
   sec.style.display='';
-  document.getElementById('rec-count').textContent='('+allRecords.length+' รายการ)';
-  if(allRecords.length===0){
+  document.getElementById('rec-count').textContent='('+latest.length+' รายการ)';
+  if(latest.length===0){
     tbody.innerHTML='<tr><td colspan="12"><div class="no-records"><div class="ico">📭</div>ยังไม่มีบันทึกผลการทดสอบ</div></td></tr>';
+    renderAdminDashboard();
     return;
   }
   if(document.getElementById('result-body').style.display!=='none') div.style.display='';
-  var rows=allRecords.map(function(r,i){
+  var rows=latest.map(function(r,i){
     var lc=lvlClass[r.levelEn]||'lv-sa';
     var scoreCol=r.totalScore>=90?'#34d399':r.totalScore>=75?'#7aaaf5':r.totalScore>=60?'#fb923c':'#f87171';
     return '<tr>'
@@ -1027,18 +1083,163 @@ function renderRecordsTable(){
       +'</tr>';
   }).join('');
   tbody.innerHTML=rows;
+  renderAdminDashboard();
+}
+
+
+function renderAdminDashboard(){
+  var latest = getLatestOnlyRecords(allRecords);
+  var gate = document.getElementById('admin-gate');
+  var body = document.getElementById('admin-body');
+  if(!body || !gate) return;
+  if(!adminUnlocked){
+    gate.style.display = 'block';
+    body.style.display = 'none';
+    return;
+  }
+  gate.style.display = 'none';
+  body.style.display = 'block';
+
+  setText('sum-total', latest.length);
+  var avg = latest.length ? (latest.reduce(function(s,r){ return s + Number(r.totalScore || 0); }, 0) / latest.length).toFixed(1) : '0';
+  setText('sum-avg', avg);
+  var max = latest.length ? latest.reduce(function(m,r){ return Math.max(m, Number(r.totalScore || 0)); }, 0) : 0;
+  setText('sum-max', max);
+  var risk = latest.filter(function(r){ return r.level === 'ต้องพัฒนา'; }).length;
+  setText('sum-risk', risk);
+
+  renderRanking(latest);
+  renderLevelBars(latest);
+  renderBreakdown(latest, 'company', 'company-tbody');
+  renderBreakdown(latest, 'dept', 'dept-tbody');
+}
+
+function setText(id, val){
+  var el = document.getElementById(id);
+  if(el) el.textContent = val;
+}
+
+function renderRanking(rows){
+  var tbody = document.getElementById('rank-tbody');
+  var count = document.getElementById('rank-count');
+  if(!tbody) return;
+  var rankRows = rows.slice().sort(function(a,b){
+    if(Number(b.totalScore||0) !== Number(a.totalScore||0)) return Number(b.totalScore||0) - Number(a.totalScore||0);
+    return String((a.fname||'') + (a.lname||'')).localeCompare(String((b.fname||'') + (b.lname||'')), 'th');
+  });
+  if(count) count.textContent = '(' + rankRows.length + ' คน)';
+  if(!rankRows.length){
+    tbody.innerHTML = '<tr><td colspan="6"><div class="no-records"><div class="ico">📭</div>ยังไม่มีข้อมูล</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = rankRows.map(function(r, i){
+    return '<tr>'
+      + '<td>' + (i+1) + '</td>'
+      + '<td>' + esc(r.fname + ' ' + r.lname) + '</td>'
+      + '<td>' + esc(r.dept || '-') + '</td>'
+      + '<td>' + esc(r.company || '-') + '</td>'
+      + '<td style="font-weight:700;color:' + getLevelColor(r.level) + ';">' + esc(String(r.totalScore||0)) + '</td>'
+      + '<td>' + levelBadge(r.level) + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function renderLevelBars(rows){
+  var host = document.getElementById('level-bars');
+  if(!host) return;
+  var levels = [
+    { key:'ดีเยี่ยม', color:'#34d399' },
+    { key:'ดี', color:'#7aaaf5' },
+    { key:'พอใช้', color:'#fb923c' },
+    { key:'ต้องพัฒนา', color:'#f87171' }
+  ];
+  var total = rows.length || 1;
+  host.innerHTML = levels.map(function(item){
+    var count = rows.filter(function(r){ return r.level === item.key; }).length;
+    var pct = Math.round((count / total) * 100);
+    return '<div class="kpi-bar">'
+      + '<div class="kpi-bar-top"><span>' + item.key + '</span><strong>' + count + ' คน (' + pct + '%)</strong></div>'
+      + '<div class="kpi-bar-track"><div class="kpi-bar-fill" style="width:' + pct + '%;background:' + item.color + ';"></div></div>'
+      + '</div>';
+  }).join('');
+}
+
+function renderBreakdown(rows, key, targetId){
+  var tbody = document.getElementById(targetId);
+  if(!tbody) return;
+  var map = {};
+  rows.forEach(function(r){
+    var k = String(r[key] || '-').trim() || '-';
+    if(!map[k]) map[k] = { count:0, total:0 };
+    map[k].count += 1;
+    map[k].total += Number(r.totalScore || 0);
+  });
+  var items = Object.keys(map).map(function(k){
+    return { name:k, count:map[k].count, avg:(map[k].total / map[k].count).toFixed(1) };
+  }).sort(function(a,b){ return Number(b.avg) - Number(a.avg); });
+
+  if(!items.length){
+    tbody.innerHTML = '<tr><td colspan="3"><div class="no-records"><div class="ico">📭</div>ยังไม่มีข้อมูล</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = items.map(function(item){
+    return '<tr>'
+      + '<td>' + esc(item.name) + '</td>'
+      + '<td>' + item.count + '</td>'
+      + '<td style="font-weight:700;color:var(--goldL);">' + item.avg + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function exportAdminExcel(){
+  var latest = getLatestOnlyRecords(allRecords);
+  if(!latest.length){
+    showExportMsg('ไม่มีข้อมูลสำหรับ Export');
+    return;
+  }
+  var summary = [
+    ['Metric', 'Value'],
+    ['ผู้เข้าสอบล่าสุด', latest.length],
+    ['คะแนนเฉลี่ย', (latest.reduce(function(s,r){ return s + Number(r.totalScore||0); }, 0) / latest.length).toFixed(1)],
+    ['คะแนนสูงสุด', latest.reduce(function(m,r){ return Math.max(m, Number(r.totalScore||0)); }, 0)],
+    ['ต้องพัฒนา', latest.filter(function(r){ return r.level === 'ต้องพัฒนา'; }).length]
+  ];
+  var ranking = latest.slice().sort(function(a,b){ return Number(b.totalScore||0) - Number(a.totalScore||0); }).map(function(r, i){
+    return {
+      Rank: i + 1,
+      Name: (r.fname || '') + ' ' + (r.lname || ''),
+      Dept: r.dept || '',
+      Company: r.company || '',
+      Prompt: r.prompt || 0,
+      Application: r.application || 0,
+      Analysis: r.analysis || 0,
+      Impact: r.impact || 0,
+      Total: r.totalScore || 0,
+      Level: r.level || '',
+      Time: r.timeUsed || ''
+    };
+  });
+
+  var wb = XLSX.utils.book_new();
+  var ws1 = XLSX.utils.aoa_to_sheet(summary);
+  var ws2 = XLSX.utils.json_to_sheet(ranking);
+  XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
+  XLSX.utils.book_append_sheet(wb, ws2, 'Ranking');
+  XLSX.writeFile(wb, 'HR_AI_Admin_Dashboard.xlsx');
 }
 
 /* ══════════════════════════════════════
    EXPORT EXCEL
 ══════════════════════════════════════ */
 function exportExcel(){
-  if(allRecords.length===0){ showExportMsg('ไม่มีข้อมูลสำหรับ Export'); return; }
+  var exportRowsSrc = getLatestOnlyRecords(allRecords);
+  if(exportRowsSrc.length===0){ showExportMsg('ไม่มีข้อมูลสำหรับ Export'); return; }
   try {
     var headers = ['ลำดับ','วันที่/เวลา','ชื่อ','นามสกุล','แผนก','บริษัท',
       'Prompt (/25)','Application (/20)','Analysis (/40)','Business Impact (/15)',
       'คะแนนรวม (/100)','ระดับ','เวลาที่ใช้','ส่งอัตโนมัติ'];
-    var rows = allRecords.map(function(r,i){
+    var rows = exportRowsSrc.map(function(r,i){
       return [i+1, r.date, r.fname, r.lname, r.dept, r.company,
         r.prompt, r.application, r.analysis, r.impact,
         r.totalScore, r.level, r.timeUsed, r.isAuto?'ใช่':'ไม่'];

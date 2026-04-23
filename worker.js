@@ -7,10 +7,12 @@ export default {
       "Access-Control-Allow-Headers": "Content-Type"
     };
 
+    // ✅ Handle CORS preflight
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
+    // ✅ Health check
     if (request.method !== "POST") {
       return new Response("OK", { headers: corsHeaders });
     }
@@ -19,78 +21,96 @@ export default {
       const body = await request.json();
       const prompt = body.prompt || "";
 
-      // 🔵 เรียก Gemini 2.5 Flash-Lite
-      try {
-        const resp = await fetch(
-          "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-goog-api-key": env.GEMINI_API_KEY
-            },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }]
-            })
-          }
-        );
+      // ✅ Primary: Gemini 1.5 Pro (เสถียร)
+      const mainAI = await callGemini(
+        "gemini-1.5-pro",
+        prompt,
+        env.GEMINI_API_KEY
+      );
 
-        const data = await resp.json();
-
-        if (resp.ok) {
-          let text = "";
-
-          if (
-            data.candidates &&
-            data.candidates[0] &&
-            data.candidates[0].content &&
-            data.candidates[0].content.parts
-          ) {
-            data.candidates[0].content.parts.forEach(p => {
-              if (p.text) text += p.text;
-            });
-          }
-
-          if (text && text.trim()) {
-            return new Response(JSON.stringify({
-              ok: true,
-              text: text,
-              source: "AI"
-            }), {
-              headers: {
-                "Content-Type": "application/json",
-                ...corsHeaders
-              }
-            });
-          }
-        }
-
-      } catch (e) {
-        // ignore → ไป fallback
+      if (mainAI) {
+        return jsonResponse({
+          ok: true,
+          source: "GEMINI-1.5-PRO",
+          text: mainAI
+        }, corsHeaders);
       }
 
-      // 🔴 Fallback Mock AI
-      const mock = generateMockResult();
+      // ✅ Fallback: Gemini 1.5 Flash
+      const backupAI = await callGemini(
+        "gemini-1.5-flash",
+        prompt,
+        env.GEMINI_API_KEY
+      );
 
-      return new Response(JSON.stringify({
+      if (backupAI) {
+        return jsonResponse({
+          ok: true,
+          source: "GEMINI-1.5-FLASH",
+          text: backupAI
+        }, corsHeaders);
+      }
+
+      // 🔴 Final fallback: Mock AI ตรวจข้อสอบ
+      const mockResult = generateMockExamEvaluation(prompt);
+
+      return jsonResponse({
         ok: true,
-        text: JSON.stringify(mock),
-        source: "MOCK"
-      }), {
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders
-        }
-      });
+        source: "MOCK-AI",
+        text: mockResult
+      }, corsHeaders);
 
     } catch (e) {
-      return new Response(JSON.stringify({
+      return jsonResponse({
         ok: false,
-        text: "ERROR: " + e.message
-      }), {
-        status: 500,
-        headers: corsHeaders
-      });
+        error: e.message
+      }, corsHeaders, 500);
     }
   }
 };
+
+/* -------------------------------------------------- */
+/* ✅ Gemini Caller                                   */
+/* -------------------------------------------------- */
+async function callGemini(model, prompt, apiKey) {
+  try {
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-goog-api-key": apiKey
+        },
+        body: JSON.stringify({
+          contents: [
+            { parts: [{ text: prompt }] }
+          ]
+        })
+      }
+    );
+
+    if (!resp.ok) return null;
+
+    const data = await resp.json();
+
+    return data?.candidates?.[0]?.content?.parts
+      ?.map(p => p.text)
+      ?.join("") || null;
+
+  } catch {
+    return null;
+  }
+}
+
+/* -------------------------------------------------- */
+/* ✅ Mock AI: ตรวจข้อสอบ HR + AI Literacy (5 ข้อ)     */
+/* -------------------------------------------------- */
+function generateMockExamEvaluation(answer) {
+
+  const criteria = [
+    {
+      name: "Prompt Writing (Performance Appraisal)",
+      max: 25,
+      keywords: ["context", "performance", "evaluation", "format", "hr"],
+      good: "Prompt มีโครงสร้างดี ระบุบริบท เป้าหมาย และรูปแบบผลลัพธ์",

@@ -19,10 +19,10 @@ export default {
       const body = await request.json();
       const prompt = body.prompt || "";
 
-      // 🔵 ลองเรียก Gemini ก่อน
+      // 🔵 เรียก Gemini 2.5 Flash-Lite
       try {
         const resp = await fetch(
-          "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+          "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
           {
             method: "POST",
             headers: {
@@ -69,7 +69,7 @@ export default {
         // ignore → ไป fallback
       }
 
-      // 🔴 Fallback Mock AI (ฟรี 100%)
+      // 🔴 Fallback Mock AI
       const mock = generateMockResult();
 
       return new Response(JSON.stringify({
@@ -94,58 +94,3 @@ export default {
     }
   }
 };
-
-// 🔥 Mock AI Generator
-function generateMockResult() {
-  function rand(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-
-  const prompt = rand(15, 25);
-  const application = rand(10, 20);
-  const analysis = rand(20, 40);
-  const impact = rand(5, 15);
-
-  const total = prompt + application + analysis + impact;
-
-  let level = "ต้องพัฒนา";
-  let levelEn = "Needs Improvement";
-  let emoji = "🔴";
-
-  if (total >= 90) {
-    level = "ดีเยี่ยม";
-    levelEn = "Excellent";
-    emoji = "🏆";
-  } else if (total >= 75) {
-    level = "ดี";
-    levelEn = "Good";
-    emoji = "🟢";
-  } else if (total >= 60) {
-    level = "พอใช้";
-    levelEn = "Satisfactory";
-    emoji = "🟡";
-  }
-
-  return {
-    totalScore: total,
-    level,
-    levelEn,
-    emoji,
-    summary: "ระบบประเมินอัตโนมัติ (Mock AI) ใช้เมื่อ AI จริงไม่พร้อมใช้งาน",
-    dimensions: {
-      prompt,
-      application,
-      analysis,
-      impact
-    },
-    questions: [
-      { num: 1, score: prompt, maxScore: 25, feedback: "ควรพัฒนา Prompt ให้ชัดเจนขึ้น" },
-      { num: 2, score: application, maxScore: 20, feedback: "มีแนวคิดที่ดีในการใช้ AI" },
-      { num: 3, score: analysis, maxScore: 20, feedback: "วิเคราะห์ได้ดีในระดับหนึ่ง" },
-      { num: 4, score: analysis, maxScore: 20, feedback: "มี logic แต่ยังไม่ลึกพอ" },
-      { num: 5, score: impact, maxScore: 15, feedback: "เข้าใจ Business Impact เบื้องต้น" }
-    ],
-    strengths: "มีความเข้าใจพื้นฐานด้าน AI",
-    improvements: "ควรเพิ่มความแม่นยำและความลึกของการวิเคราะห์"
-  };
-}

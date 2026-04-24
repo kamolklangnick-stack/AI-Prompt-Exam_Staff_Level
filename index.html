@@ -56,6 +56,7 @@ body{min-height:100vh}
 .info-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
 .input{width:100%;background:#08131f;border:1px solid var(--border);border-radius:12px;color:var(--white);padding:13px 14px;font-size:15px;outline:none}
 .input:focus{border-color:rgba(201,168,76,.5)}
+.input option{background:#08131f;color:#eef4ff}
 .progress-row{display:flex;align-items:center;gap:12px;margin:18px 0}
 .progress-track{height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;flex:1}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--goldL));width:0%;transition:.25s}
@@ -66,8 +67,9 @@ body{min-height:100vh}
 .q-dim{background:rgba(122,170,245,.12);color:#8db7ff;border-radius:8px;padding:4px 10px;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:800}
 .q-title{font-size:20px;font-weight:800;line-height:1.55}
 .q-tip{color:var(--muted);font-size:14px;margin-bottom:14px}
-.textarea{width:100%;min-height:130px;background:#08131f;border:1px solid var(--border);border-radius:14px;color:var(--white);padding:16px;font-size:16px;resize:vertical;outline:none;line-height:1.7}
+.textarea{user-select:none;-webkit-user-select:none;width:100%;min-height:130px;background:#08131f;border:1px solid var(--border);border-radius:14px;color:var(--white);padding:16px;font-size:16px;resize:vertical;outline:none;line-height:1.7}
 .textarea:focus{border-color:rgba(201,168,76,.45)}
+.textarea:disabled{opacity:.55;cursor:not-allowed;background:#07111d;color:#8aa2bc}
 .cc{text-align:right;color:var(--muted);font-size:13px;margin-top:8px}
 .submit-area{text-align:center;padding:24px 0}
 .btn-submit,.btn-main{border:0;border-radius:16px;padding:16px 34px;background:linear-gradient(135deg,var(--gold),var(--goldL));color:#08131f;font-weight:800;font-size:18px;cursor:pointer;box-shadow:0 12px 30px rgba(201,168,76,.18)}
@@ -203,8 +205,98 @@ th{background:#1d3b5d;color:var(--muted);font-size:12px;text-transform:uppercase
         <input id="f-empcode" class="input" placeholder="รหัสพนักงาน" oninput="onInfoInput(this)">
         <input id="f-fname" class="input" placeholder="ชื่อ" oninput="onInfoInput(this)">
         <input id="f-lname" class="input" placeholder="นามสกุล" oninput="onInfoInput(this)">
-        <input id="f-dept" class="input" placeholder="แผนก" oninput="onInfoInput(this)">
-        <input id="f-company" class="input" placeholder="บริษัท" oninput="onInfoInput(this)">
+        <select id="f-dept" class="input" onchange="onInfoInput(this)">
+          <option value="">เลือกแผนก</option>
+          <option value="ฝ่าย คลังสินค้าและโลจิสติกส์">ฝ่าย คลังสินค้าและโลจิสติกส์</option>
+          <option value="ฝ่าย ปฏิบัติการเชื่อม">ฝ่าย ปฏิบัติการเชื่อม</option>
+          <option value="ฝ่าย ปฏิบัติการประกอบรถหัวลาก">ฝ่าย ปฏิบัติการประกอบรถหัวลาก</option>
+          <option value="ฝ่าย เทคนิค">ฝ่าย เทคนิค</option>
+          <option value="ฝ่าย ปฏิบัติการเคลือบและทำสี">ฝ่าย ปฏิบัติการเคลือบและทำสี</option>
+          <option value="ฝ่าย ปฏิบัติการประกอบ">ฝ่าย ปฏิบัติการประกอบ</option>
+          <option value="ฝ่าย บัญชี">ฝ่าย บัญชี</option>
+          <option value="ฝ่าย งานสนับสนุนเทคนิคและล่ามภาษาจีน">ฝ่าย งานสนับสนุนเทคนิคและล่ามภาษาจีน</option>
+          <option value="ฝ่าย ควบคุมคุณภาพ">ฝ่าย ควบคุมคุณภาพ</option>
+          <option value="ฝ่าย วางแผนการผลิต">ฝ่าย วางแผนการผลิต</option>
+          <option value="ฝ่าย จัดซื้อ">ฝ่าย จัดซื้อ</option>
+          <option value="ฝ่าย โรงงานสายผลิตไบโอดีเซล">ฝ่าย โรงงานสายผลิตไบโอดีเซล</option>
+          <option value="RO Laos-ST200-ST300-ST400">RO Laos-ST200-ST300-ST400</option>
+          <option value="ฝ่าย BIO R&amp;D">ฝ่าย BIO R&amp;D</option>
+          <option value="ฝ่าย โครงการพิเศษ">ฝ่าย โครงการพิเศษ</option>
+          <option value="ฝ่าย ทรัพยากรบุคคล">ฝ่าย ทรัพยากรบุคคล</option>
+          <option value="ฝ่าย สำนักประธานเจ้าหน้าที่บริหาร">ฝ่าย สำนักประธานเจ้าหน้าที่บริหาร</option>
+          <option value="ฝ่าย เทคโนโลยีสารสนเทศ">ฝ่าย เทคโนโลยีสารสนเทศ</option>
+          <option value="ฝ่าย ความปลอดภัย อาชีวอนามัย และสิ่งแวดล้อม">ฝ่าย ความปลอดภัย อาชีวอนามัย และสิ่งแวดล้อม</option>
+          <option value="ฝ่าย บริหาร">ฝ่าย บริหาร</option>
+          <option value="ฝ่าย จัดซื้อจัดจ้าง">ฝ่าย จัดซื้อจัดจ้าง</option>
+          <option value="ฝ่าย บริหารงานทั่วไป">ฝ่าย บริหารงานทั่วไป</option>
+          <option value="ฝ่าย ระบบคุณภาพ">ฝ่าย ระบบคุณภาพ</option>
+          <option value="ฝ่าย ขายและวางแผนการตลาด">ฝ่าย ขายและวางแผนการตลาด</option>
+          <option value="ฝ่าย รัฐกิจสัมพันธ์">ฝ่าย รัฐกิจสัมพันธ์</option>
+          <option value="ฝ่าย พัฒนาความยั่งยืน">ฝ่าย พัฒนาความยั่งยืน</option>
+          <option value="ฝ่าย ระบบมาตรฐานคุณภาพ และประกันภัย">ฝ่าย ระบบมาตรฐานคุณภาพ และประกันภัย</option>
+          <option value="ฝ่าย ตรวจสอบภายใน">ฝ่าย ตรวจสอบภายใน</option>
+          <option value="ฝ่าย กฎหมายและกำกับดูแลการปฏิบัติตามกฎระเบียบ">ฝ่าย กฎหมายและกำกับดูแลการปฏิบัติตามกฎระเบียบ</option>
+          <option value="ฝ่าย พัฒนากลยุทธ์ และวางแผนการลงทุน">ฝ่าย พัฒนากลยุทธ์ และวางแผนการลงทุน</option>
+          <option value="ฝ่าย นักลงทุนสัมพันธ์และสื่อสารองค์กร">ฝ่าย นักลงทุนสัมพันธ์และสื่อสารองค์กร</option>
+          <option value="ฝ่าย การเงิน (รับ-จ่าย)">ฝ่าย การเงิน (รับ-จ่าย)</option>
+          <option value="ฝ่าย กลยุทธ์ทรัพยากรบุคคล">ฝ่าย กลยุทธ์ทรัพยากรบุคคล</option>
+          <option value="ฝ่าย การเงิน">ฝ่าย การเงิน</option>
+          <option value="ฝ่าย การจัดการกระบวนการของสินค้าและบริการองค์รวม">ฝ่าย การจัดการกระบวนการของสินค้าและบริการองค์รวม</option>
+          <option value="ฝ่าย เทคโนโลยีสารสนเทศ และพัฒนาระบบ">ฝ่าย เทคโนโลยีสารสนเทศ และพัฒนาระบบ</option>
+          <option value="ฝ่าย ปฏิบัติการและซ่อมบำรุง">ฝ่าย ปฏิบัติการและซ่อมบำรุง</option>
+          <option value="ฝ่าย พัฒนาธุรกิจ">ฝ่าย พัฒนาธุรกิจ</option>
+          <option value="ฝ่าย ปฏิบัติการ และซ่อมบำรุง">ฝ่าย ปฏิบัติการ และซ่อมบำรุง</option>
+          <option value="ฝ่าย บริหารโครงการธุรกิจบริการสถานีอัดประจุไฟฟ้า">ฝ่าย บริหารโครงการธุรกิจบริการสถานีอัดประจุไฟฟ้า</option>
+          <option value="ฝ่าย ศูนย์ทดสอบ">ฝ่าย ศูนย์ทดสอบ</option>
+          <option value="ฝ่าย การผลิตแบตเตอรี่">ฝ่าย การผลิตแบตเตอรี่</option>
+          <option value="ฝ่าย วิศวกรรมและการบำรุงรักษา">ฝ่าย วิศวกรรมและการบำรุงรักษา</option>
+          <option value="ฝ่าย วิศวกรรมและการพัฒนา">ฝ่าย วิศวกรรมและการพัฒนา</option>
+          <option value="ฝ่าย การจัดการคุณภาพ">ฝ่าย การจัดการคุณภาพ</option>
+          <option value="ฝ่าย ทรัพยากรบุคคลและบริหารงานทั่วไป">ฝ่าย ทรัพยากรบุคคลและบริหารงานทั่วไป</option>
+          <option value="ฝ่าย ขายและการตลาด">ฝ่าย ขายและการตลาด</option>
+          <option value="ฝ่าย พัฒนาธุรกิจและบริหารโครงการ">ฝ่าย พัฒนาธุรกิจและบริหารโครงการ</option>
+          <option value="ฝ่าย การผลิต">ฝ่าย การผลิต</option>
+          <option value="ฝ่าย ทรัพยากรบุคคลและบริหาร">ฝ่าย ทรัพยากรบุคคลและบริหาร</option>
+          <option value="ฝ่าย อาชีวอนามัย ความปลอดภัย และสิ่งแวดล้อม">ฝ่าย อาชีวอนามัย ความปลอดภัย และสิ่งแวดล้อม</option>
+          <option value="ฝ่าย ปฏิบัติการ และบำรุงรักษา-ชัยภูมิ">ฝ่าย ปฏิบัติการ และบำรุงรักษา-ชัยภูมิ</option>
+          <option value="ฝ่าย ปฏิบัติการ และบำรุงรักษา-ลำปาง">ฝ่าย ปฏิบัติการ และบำรุงรักษา-ลำปาง</option>
+          <option value="ฝ่าย ปฏิบัติการ และบำรุงรักษา-นครสวรรค์">ฝ่าย ปฏิบัติการ และบำรุงรักษา-นครสวรรค์</option>
+          <option value="ฝ่าย ปฏิบัติการ และบำรุงรักษา-นครศรีธรรมราช">ฝ่าย ปฏิบัติการ และบำรุงรักษา-นครศรีธรรมราช</option>
+          <option value="ฝ่าย ปฏิบัติการ และบำรุงรักษา-ลพบุรี">ฝ่าย ปฏิบัติการ และบำรุงรักษา-ลพบุรี</option>
+          <option value="ฝ่าย ปฏิบัติการ และบำรุงรักษา-พิษณุโลก">ฝ่าย ปฏิบัติการ และบำรุงรักษา-พิษณุโลก</option>
+          <option value="ฝ่าย ปฏิบัติการ และซ่อมบำรุง-ส่วนกลาง">ฝ่าย ปฏิบัติการ และซ่อมบำรุง-ส่วนกลาง</option>
+          <option value="ฝ่าย ธุรการ">ฝ่าย ธุรการ</option>
+          <option value="ฝ่าย Engineering &amp; Construction">ฝ่าย Engineering &amp; Construction</option>
+          <option value="ฝ่าย บริหารธุรกิจโรงไฟฟ้าพลังงานหมุนเวียน">ฝ่าย บริหารธุรกิจโรงไฟฟ้าพลังงานหมุนเวียน</option>
+          <option value="ฝ่าย บริหารจัดการอาคาร">ฝ่าย บริหารจัดการอาคาร</option>
+          <option value="ฝ่าย บริหารเครื่องจักร">ฝ่าย บริหารเครื่องจักร</option>
+          <option value="ฝ่าย วิศวกรรมและการผลิต">ฝ่าย วิศวกรรมและการผลิต</option>
+          <option value="ฝ่าย ควบคุมและประกันคุณภาพ/วางแผนการผลิต">ฝ่าย ควบคุมและประกันคุณภาพ/วางแผนการผลิต</option>
+          <option value="ฝ่าย วิศวกรรมระบบเครื่องกล">ฝ่าย วิศวกรรมระบบเครื่องกล</option>
+          <option value="ฝ่าย วิศวกรรมเรือ สนับสนุนและบริการ">ฝ่าย วิศวกรรมเรือ สนับสนุนและบริการ</option>
+          <option value="ฝ่าย พัฒนาธุรกิจ - Ev Conversion">ฝ่าย พัฒนาธุรกิจ - Ev Conversion</option>
+          <option value="ฝ่าย วิศวกรรมโครงสร้าง">ฝ่าย วิศวกรรมโครงสร้าง</option>
+          <option value="ฝ่าย วิศวกรรมระบบไฟฟ้าควบคุม">ฝ่าย วิศวกรรมระบบไฟฟ้าควบคุม</option>
+        </select>
+        <select id="f-company" class="input" onchange="onInfoInput(this)">
+          <option value="">เลือกบริษัท</option>
+          <option value="บริษัท แอ๊บโซลูท แอสเซมบลี จำกัด">บริษัท แอ๊บโซลูท แอสเซมบลี จำกัด</option>
+          <option value="บริษัท สมาร์ท เวสท์ เมเนจเมนท์ จำกัด">บริษัท สมาร์ท เวสท์ เมเนจเมนท์ จำกัด</option>
+          <option value="บริษัท พลังงานบริสุทธิ์ จำกัด (มหาชน)">บริษัท พลังงานบริสุทธิ์ จำกัด (มหาชน)</option>
+          <option value="RO Laos">RO Laos</option>
+          <option value="บริษัท กรีน เทคโนโลยี รีเสิร์ช จำกัด">บริษัท กรีน เทคโนโลยี รีเสิร์ช จำกัด</option>
+          <option value="บริษัท ดับเบิ้ลพี แลนด์ จำกัด">บริษัท ดับเบิ้ลพี แลนด์ จำกัด</option>
+          <option value="บริษัท ท่าอากาศยาน พลังงานบริสุทธิ์ จำกัด">บริษัท ท่าอากาศยาน พลังงานบริสุทธิ์ จำกัด</option>
+          <option value="บริษัท พลังงานมหานคร จำกัด">บริษัท พลังงานมหานคร จำกัด</option>
+          <option value="บริษัท ฟิวเจอร์ ฟอร์ ทูเดย์ จำกัด">บริษัท ฟิวเจอร์ ฟอร์ ทูเดย์ จำกัด</option>
+          <option value="บริษัท ศูนย์ทดสอบแบตเตอรี่ ยานยนต์ไฟฟ้า และผลิตภัณฑ์อิเล็กทรอนิกส์ จำกัด">บริษัท ศูนย์ทดสอบแบตเตอรี่ ยานยนต์ไฟฟ้า และผลิตภัณฑ์อิเล็กทรอนิกส์ จำกัด</option>
+          <option value="บริษัท อมิตา เทคโนโลยี (ประเทศไทย) จำกัด">บริษัท อมิตา เทคโนโลยี (ประเทศไทย) จำกัด</option>
+          <option value="บริษัท อีเอ เวสท์ แมเนจเม้นท์ ภูเก็ต จำกัด">บริษัท อีเอ เวสท์ แมเนจเม้นท์ ภูเก็ต จำกัด</option>
+          <option value="บริษัท อีเอ ไบโอ อินโนเวชั่น จำกัด">บริษัท อีเอ ไบโอ อินโนเวชั่น จำกัด</option>
+          <option value="บริษัท เอ็นเนอร์จี โซลูชั่น เมเนจเมนท์ จำกัด">บริษัท เอ็นเนอร์จี โซลูชั่น เมเนจเมนท์ จำกัด</option>
+          <option value="บริษัท ไมน์ โมบิลิตี คอร์ปอเรชั่น จำกัด">บริษัท ไมน์ โมบิลิตี คอร์ปอเรชั่น จำกัด</option>
+          <option value="บริษัท ไมน์ โมบิลิตี รีเสิร์ช จำกัด">บริษัท ไมน์ โมบิลิตี รีเสิร์ช จำกัด</option>
+        </select>
       </div>
       <div class="progress-row">
         <div style="color:var(--muted);font-weight:800">ความคืบหน้า</div>
@@ -397,10 +489,45 @@ function renderQuestions(){
     return '<div class="q-card card" id="card-'+q.num+'">'
       + '<div class="q-head"><div class="q-num" id="dot'+q.num+'">'+q.num+'</div><div><div class="q-dim">▣ '+q.dim+' · '+q.max+' คะแนน</div><div class="q-title">'+q.text+'</div></div></div>'
       + '<div class="q-tip">💡 คำแนะนำ: '+q.tip+'</div>'
-      + '<textarea class="textarea" id="a'+q.num+'" placeholder="พิมพ์คำตอบของคุณที่นี่..." oninput="handleInput('+q.num+')"></textarea>'
+      + '<textarea class="textarea" id="a'+q.num+'" placeholder="พิมพ์คำตอบของคุณที่นี่..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-last-value="" onbeforeinput="guardBeforeInput(event)" oninput="handleInput('+q.num+')"></textarea>'
       + '<div class="cc" id="cc'+q.num+'">0 ตัวอักษร</div>'
       + '</div>';
   }).join('');
+}
+
+
+function guardBeforeInput(e){
+  if(!isAnswerField(e.target)) return true;
+  var t = String(e.inputType || '').toLowerCase();
+  if(t.indexOf('paste') >= 0 || t.indexOf('drop') >= 0 || t.indexOf('yank') >= 0 || t === 'insertreplacementtext'){
+    e.preventDefault();
+    toast('ไม่อนุญาตให้วางข้อความระหว่างทำข้อสอบ กรุณาพิมพ์คำตอบด้วยตนเอง');
+    return false;
+  }
+  return true;
+}
+
+function guardMobilePasteFallback(el, n){
+  var current = el.value || '';
+  var last = el.dataset.lastValue || '';
+  var inputType = (window.event && window.event.inputType) ? String(window.event.inputType).toLowerCase() : '';
+
+  // Android บางรุ่นไม่ยิง paste event แต่จะทำให้ข้อความเพิ่มขึ้นยาวผิดปกติในครั้งเดียว
+  var diff = current.length - last.length;
+  if(
+    inputType.indexOf('paste') >= 0 ||
+    inputType.indexOf('drop') >= 0 ||
+    inputType === 'insertreplacementtext' ||
+    diff > 80
+  ){
+    el.value = last;
+    answers[n] = last;
+    toast('ไม่อนุญาตให้วางข้อความระหว่างทำข้อสอบ กรุณาพิมพ์คำตอบด้วยตนเอง');
+    return false;
+  }
+
+  el.dataset.lastValue = current;
+  return true;
 }
 
 function bindAntiCheat(){
@@ -408,6 +535,14 @@ function bindAntiCheat(){
   document.addEventListener('paste', blockCopyPaste, true);
   document.addEventListener('cut', blockCopyPaste, true);
   document.addEventListener('drop', blockCopyPaste, true);
+  document.addEventListener('beforeinput', guardBeforeInput, true);
+  document.addEventListener('selectstart', function(e){
+    if(isAnswerField(e.target)){
+      // ยังอนุญาตให้ลาก cursor ได้บาง browser แต่ลดโอกาส select เพื่อ copy
+      // ถ้า browser บล็อกแรงเกินไป ให้ comment 3 บรรทัดนี้
+      e.preventDefault();
+    }
+  }, true);
   document.addEventListener('contextmenu', function(e){
     if(isAnswerField(e.target)){ e.preventDefault(); }
   }, true);
@@ -422,7 +557,7 @@ function isAnswerField(el){ return el && el.tagName === 'TEXTAREA'; }
 function blockCopyPaste(e){
   if(isAnswerField(e.target)){
     e.preventDefault();
-    toast('ไม่อนุญาตให้ copy / paste ระหว่างทำข้อสอบ');
+    toast('ไม่อนุญาตให้ copy / paste ระหว่างทำข้อสอบ กรุณาพิมพ์คำตอบด้วยตนเอง');
     return false;
   }
 }
@@ -454,6 +589,14 @@ function startTimer(){
     }
   },1000);
 }
+
+function setAnswerFieldsDisabled(disabled){
+  for(var i=1;i<=5;i++){
+    var a = document.getElementById('a'+i);
+    if(a) a.disabled = !!disabled;
+  }
+}
+
 function updateTimerDisplay(){
   var m = Math.floor(remainSecs/60), s = remainSecs % 60;
   document.getElementById('timerDisplay').textContent = (m<10?'0':'')+m+':'+(s<10?'0':'')+s;
@@ -470,10 +613,12 @@ function togglePause(){
     btn.textContent = '▶ ต่อ';
     btn.classList.add('paused');
     document.getElementById('timerBox').style.opacity = '.65';
+    setAnswerFieldsDisabled(true);
   }else{
     btn.textContent = '⏸ หยุด';
     btn.classList.remove('paused');
     document.getElementById('timerBox').style.opacity = '1';
+    setAnswerFieldsDisabled(false);
   }
 }
 function pauseTimerForAdmin(){
@@ -514,7 +659,9 @@ function formatThaiDateTime(dt){
 
 function onInfoInput(el){ el.classList.toggle('filled', el.value.trim().length>0); refreshProgress(); renderRecordsTable(); }
 function handleInput(n){
-  var v = document.getElementById('a'+n).value;
+  var el = document.getElementById('a'+n);
+  if(!guardMobilePasteFallback(el, n)) return;
+  var v = el.value;
   answers[n] = v;
   document.getElementById('cc'+n).textContent = v.length + ' ตัวอักษร';
   var dot = document.getElementById('dot'+n);
@@ -569,6 +716,25 @@ async function doSubmit(isAuto){
       alert('กรุณาตอบคำถามให้ครบทั้ง 5 ข้อ');
       return;
     }
+  }
+
+  try{
+    var checkResp = await fetch(WORKER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'check_attempts', employee_code: employee_code })
+    });
+    var checkData = await checkResp.json().catch(function(){ return {}; });
+    if(!checkResp.ok || checkData.ok === false){
+      throw new Error(checkData.error || ('check_attempts failed HTTP ' + checkResp.status));
+    }
+    if(Number(checkData.attempts || 0) >= 3){
+      alert('รหัสพนักงานนี้ทำแบบทดสอบครบ 3 ครั้งแล้ว\nระบบจะใช้คะแนนที่ดีที่สุดจากการทำแบบทดสอบทั้งหมดเป็นผลลัพธ์สุดท้าย');
+      return;
+    }
+  }catch(e){
+    alert('ตรวจสอบจำนวนครั้งที่ทำแบบทดสอบไม่สำเร็จ: ' + (e.message || e));
+    return;
   }
 
   isSubmitting = true;
@@ -642,6 +808,8 @@ async function doSubmit(isAuto){
     });
     var saveData = await saveResp.json().catch(function(){ return {}; });
     if(!saveResp.ok || saveData.ok === false) throw new Error(saveData.error || ('save_result failed HTTP ' + saveResp.status));
+
+    if(saveData.attempts){ toast('บันทึกผลสำเร็จ: ใช้สิทธิทำแบบทดสอบแล้ว ' + saveData.attempts + '/3 ครั้ง'); }
 
     await loadRecordsFromDB();
     if(!allRecords.some(function(r){ return String(r.id) === String(rec.id); })){
@@ -762,7 +930,9 @@ async function loadRecordsFromDB(){
         answer2:r.answer2 || '',
         answer3:r.answer3 || '',
         answer4:r.answer4 || '',
-        answer5:r.answer5 || ''
+        answer5:r.answer5 || '',
+        attempt_count:r.attempt_count || r.attemptCount || '',
+        is_best:r.is_best || r.isBest || 0
       };
     }).filter(function(r){ return r.fname && r.lname && r.fname !== '-' && r.lname !== '-'; });
     renderRecordsTable();
@@ -930,7 +1100,7 @@ function renderAdminDashboard(summary){
         employee_code:r.employee_code||'',
         fname:r.fname||'',lname:r.lname||'',dept:r.dept||'',company:r.company||'',
         totalScore:Number(r.totalScore||0),level:r.level||'',date:r.created_at||'',
-        answer1:r.answer1||'',answer2:r.answer2||'',answer3:r.answer3||'',answer4:r.answer4||'',answer5:r.answer5||''
+        answer1:r.answer1||'',answer2:r.answer2||'',answer3:r.answer3||'',answer4:r.answer4||'',answer5:r.answer5||'',attempt_count:r.attempt_count||r.attemptCount||'',is_best:r.is_best||r.isBest||0
       };
     });
   }else if(adminBaseRows.length){
@@ -1033,7 +1203,7 @@ function viewAnswerByIndex(idx){
   var sub = document.getElementById('answerModalSub');
   var body = document.getElementById('answerModalBody');
   title.textContent = 'คำตอบ: ' + (r.fname || '') + ' ' + (r.lname || '');
-  sub.textContent = 'รหัสพนักงาน: ' + (r.employee_code || '-') + ' | แผนก: ' + (r.dept || '-') + ' | บริษัท: ' + (r.company || '-') + ' | คะแนนรวม: ' + Number(r.totalScore || 0);
+  sub.textContent = 'รหัสพนักงาน: ' + (r.employee_code || '-') + ' | แผนก: ' + (r.dept || '-') + ' | บริษัท: ' + (r.company || '-') + ' | คะแนนรวม: ' + Number(r.totalScore || 0) + ' | จำนวนครั้ง: ' + (r.attempt_count || '-');
   var answersList = [
     {no:1, q:'เขียน Prompt เพื่อขอให้ AI สร้างแบบประเมินพนักงานประจำปี', a:r.answer1 || ''},
     {no:2, q:'การนำ AI มาช่วยในกระบวนการ Recruitment', a:r.answer2 || ''},
@@ -1084,7 +1254,7 @@ function clearRecords(){
 function doRetry(){
   answers={1:'',2:'',3:'',4:'',5:''};
   remainSecs=TOTAL_SECS; timeUsedSecs=0; isPaused=false; timerExpired=false; submitTriggered=false; isSubmitting=false;
-  for(var i=1;i<=5;i++){ var a=document.getElementById('a'+i); a.value=''; a.disabled=false; document.getElementById('cc'+i).textContent='0 ตัวอักษร'; document.getElementById('dot'+i).classList.remove('done'); document.getElementById('dot'+i).textContent=i; document.getElementById('card-'+i).classList.remove('filled'); }
+  for(var i=1;i<=5;i++){ var a=document.getElementById('a'+i); a.value=''; a.dataset.lastValue=''; a.disabled=false; document.getElementById('cc'+i).textContent='0 ตัวอักษร'; document.getElementById('dot'+i).classList.remove('done'); document.getElementById('dot'+i).textContent=i; document.getElementById('card-'+i).classList.remove('filled'); }
   ['f-empcode','f-fname','f-lname','f-dept','f-company'].forEach(function(id){ var el=document.getElementById(id); el.value=''; el.disabled=false; el.classList.remove('filled'); });
   document.getElementById('result-body').style.display='none';
   document.getElementById('empty-result').style.display='block';

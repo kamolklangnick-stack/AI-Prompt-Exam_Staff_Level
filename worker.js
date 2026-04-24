@@ -1,7 +1,6 @@
 export default {
   async fetch(request, env) {
     const requestHeaders = request.headers.get("Access-Control-Request-Headers") || "Content-Type";
-
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -25,77 +24,74 @@ export default {
       const body = await request.json().catch(() => ({}));
       const action = String(body.action || "").trim();
 
-      if (action === "grade") {
-        return await handleGrade(body, env, corsHeaders);
-      }
+      if (action === "check_attempts") return await handleCheckAttempts(body, env, corsHeaders);
+      if (action === "grade") return await handleGrade(body, env, corsHeaders);
+      if (action === "save_result") return await handleSaveResult(body, env, corsHeaders);
+      if (action === "dashboard_summary") return await handleDashboardSummary(body, env, corsHeaders);
+      if (action === "clear_results") return await handleClearResults(body, env, corsHeaders);
 
-      if (action === "save_result") {
-        return await handleSaveResult(body, env, corsHeaders);
-      }
-
-      if (action === "dashboard_summary") {
-        return await handleDashboardSummary(body, env, corsHeaders);
-      }
-
-      if (action === "clear_results") {
-        return await handleClearResults(body, env, corsHeaders);
-      }
-
-      return jsonResponse({
-        ok: false,
-        error: "Unknown action",
-        receivedAction: action || "(empty)"
-      }, 400, corsHeaders);
-
+      return jsonResponse({ ok: false, error: "Unknown action", receivedAction: action || "(empty)" }, 400, corsHeaders);
     } catch (e) {
-      return jsonResponse({
-        ok: false,
-        error: e && e.message ? e.message : "Unknown error"
-      }, 500, corsHeaders);
+      return jsonResponse({ ok: false, error: e?.message || "Unknown error" }, 500, corsHeaders);
     }
   }
 };
 
 async function handleGet(env, corsHeaders) {
-  if (!env.DB) {
-    return jsonResponse({ ok: false, error: "Missing D1 binding: DB" }, 500, corsHeaders);
-  }
+  if (!env.DB) return jsonResponse({ ok: false, error: "Missing D1 binding: DB" }, 500, corsHeaders);
 
   const { results } = await env.DB.prepare(`
     SELECT
-      id,
-      created_at,
-      employee_code,
-      fname,
-      lname,
-      dept,
-      company,
-      prompt_score,
-      application_score,
-      analysis_score,
-      impact_score,
-      total_score,
-      level,
-      levelEn,
-      time_used,
-      is_auto,
-      answer1,
-      answer2,
-      answer3,
-      answer4,
-      answer5
+      r.id, r.created_at, r.employee_code, r.fname, r.lname, r.dept, r.company,
+      r.prompt_score, r.application_score, r.analysis_score, r.impact_score,
+      r.total_score, r.level, r.levelEn, r.time_used, r.is_auto,
+      r.answer1, r.answer2, r.answer3, r.answer4, r.answer5,
+      (
+        SELECT COUNT(*) FROM results c
+        WHERE COALESCE(NULLIF(TRIM(c.employee_code), ''), LOWER(TRIM(c.fname)) || '|' || LOWER(TRIM(c.lname)))
+          = COALESCE(NULLIF(TRIM(r.employee_code), ''), LOWER(TRIM(r.fname)) || '|' || LOWER(TRIM(r.lname)))
+      ) AS attempt_count,
+      1 AS is_best
     FROM results r
     WHERE r.id = (
-      SELECT MAX(x.id)
+      SELECT x.id
       FROM results x
       WHERE COALESCE(NULLIF(TRIM(x.employee_code), ''), LOWER(TRIM(x.fname)) || '|' || LOWER(TRIM(x.lname)))
         = COALESCE(NULLIF(TRIM(r.employee_code), ''), LOWER(TRIM(r.fname)) || '|' || LOWER(TRIM(r.lname)))
+      ORDER BY x.total_score DESC, x.id DESC
+      LIMIT 1
     )
-    ORDER BY id DESC
+    ORDER BY r.total_score DESC, r.id DESC
     LIMIT 500
   `).all();
 
   return jsonResponse({ ok: true, data: results || [] }, 200, corsHeaders);
+}
+
+async function handleCheckAttempts(body, env, corsHeaders) {
+  if (!env.DB) return jsonResponse({ ok: false, error: "Missing D1 binding: DB" }, 500, corsHeaders);
+  const employee_code = String(body.employee_code || body.employeeCode || "").trim();
+
+  if (!employee_code) {
+    return jsonResponse({ ok: false, error: "Missing employee_code" }, 400, corsHeaders);
+  }
+
+  const row = await env.DB.prepare(`
+    SELECT COUNT(*) AS attempts, MAX(total_score) AS bestScore
+    FROM results
+    WHERE TRIM(employee_code) = ?
+  `).bind(employee_code).first();
+
+  const attempts = Number(row?.attempts || 0);
+
+  return jsonResponse({
+    ok: true,
+    employee_code,
+    attempts,
+    remaining: Math.max(0, 3 - attempts),
+    canSubmit: attempts < 3,
+    bestScore: Number(row?.bestScore || 0)
+  }, 200, corsHeaders);
 }
 
 async function handleGrade(body, env, corsHeaders) {
@@ -143,56 +139,40 @@ JSON schema:
 ${prompt}
 `;
 
-      const geminiResp = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-goog-api-key": env.GEMINI_API_KEY
-          },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: aiPrompt }] }],
-            generationConfig: { temperature: 0.2 }
-          })
-        }
-      );
+      const geminiResp = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-goog-api-key": env.GEMINI_API_KEY
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: aiPrompt }] }],
+          generationConfig: { temperature: 0.2 }
+        })
+      });
 
       const geminiData = await geminiResp.json().catch(() => ({}));
       if (geminiResp.ok) {
         let aiText = "";
         const parts = geminiData?.candidates?.[0]?.content?.parts || [];
-        for (const p of parts) {
-          if (typeof p.text === "string") aiText += p.text;
-        }
+        for (const p of parts) if (typeof p.text === "string") aiText += p.text;
 
         const parsed = parseJsonFromText(aiText);
         if (parsed && typeof parsed.totalScore === "number") {
-          return jsonResponse({
-            ok: true,
-            source: "AI",
-            result: normalizeGradeResult(parsed)
-          }, 200, corsHeaders);
+          return jsonResponse({ ok: true, source: "AI", result: normalizeGradeResult(parsed) }, 200, corsHeaders);
         }
       }
     } catch (e) {
-      // fallback mock
+      // fallback to mock
     }
   }
 
   const mockResult = gradeWithStrictMock(answers);
-  return jsonResponse({
-    ok: true,
-    source: "MOCK",
-    result: mockResult,
-    text: JSON.stringify(mockResult)
-  }, 200, corsHeaders);
+  return jsonResponse({ ok: true, source: "MOCK", result: mockResult, text: JSON.stringify(mockResult) }, 200, corsHeaders);
 }
 
 async function handleSaveResult(body, env, corsHeaders) {
-  if (!env.DB) {
-    return jsonResponse({ ok: false, error: "Missing D1 binding: DB" }, 500, corsHeaders);
-  }
+  if (!env.DB) return jsonResponse({ ok: false, error: "Missing D1 binding: DB" }, 500, corsHeaders);
 
   const employee_code = String(body.employee_code || body.employeeCode || "").trim();
   const fname = String(body.fname || "").trim();
@@ -202,10 +182,26 @@ async function handleSaveResult(body, env, corsHeaders) {
   const answers = body.answers || {};
 
   if (!employee_code || !fname || !lname || !dept || !company) {
+    return jsonResponse({ ok: false, error: "Missing required fields: employee_code, fname, lname, dept, company" }, 400, corsHeaders);
+  }
+
+  const attemptRow = await env.DB.prepare(`
+    SELECT COUNT(*) AS attempts, MAX(total_score) AS bestScore
+    FROM results
+    WHERE TRIM(employee_code) = ?
+  `).bind(employee_code).first();
+
+  const currentAttempts = Number(attemptRow?.attempts || 0);
+
+  if (currentAttempts >= 3) {
     return jsonResponse({
       ok: false,
-      error: "Missing required fields: employee_code, fname, lname, dept, company"
-    }, 400, corsHeaders);
+      error: "รหัสพนักงานนี้ทำแบบทดสอบครบ 3 ครั้งแล้ว ระบบจะใช้คะแนนที่ดีที่สุดเป็นผลลัพธ์สุดท้าย",
+      attempts: currentAttempts,
+      remaining: 0,
+      canSubmit: false,
+      bestScore: Number(attemptRow?.bestScore || 0)
+    }, 403, corsHeaders);
   }
 
   await env.DB.prepare(`
@@ -239,13 +235,25 @@ async function handleSaveResult(body, env, corsHeaders) {
     String(answers["5"] || body.answer5 || "")
   ).run();
 
-  return jsonResponse({ ok: true, saved: true }, 200, corsHeaders);
+  const afterRow = await env.DB.prepare(`
+    SELECT COUNT(*) AS attempts, MAX(total_score) AS bestScore
+    FROM results
+    WHERE TRIM(employee_code) = ?
+  `).bind(employee_code).first();
+
+  const attempts = Number(afterRow?.attempts || currentAttempts + 1);
+
+  return jsonResponse({
+    ok: true,
+    saved: true,
+    attempts,
+    remaining: Math.max(0, 3 - attempts),
+    bestScore: Number(afterRow?.bestScore || body.totalScore || body.total_score || 0)
+  }, 200, corsHeaders);
 }
 
 async function handleDashboardSummary(body, env, corsHeaders) {
-  if (!env.DB) {
-    return jsonResponse({ ok: false, error: "Missing D1 binding: DB" }, 500, corsHeaders);
-  }
+  if (!env.DB) return jsonResponse({ ok: false, error: "Missing D1 binding: DB" }, 500, corsHeaders);
 
   const pin = String(body.pin || "").trim();
   const adminPin = String(env.ADMIN_DASHBOARD_PIN || "134300").trim();
@@ -256,37 +264,18 @@ async function handleDashboardSummary(body, env, corsHeaders) {
 
   const { results } = await env.DB.prepare(`
     SELECT
-      id,
-      created_at,
-      employee_code,
-      fname,
-      lname,
-      dept,
-      company,
-      prompt_score,
-      application_score,
-      analysis_score,
-      impact_score,
-      total_score,
-      level,
-      levelEn,
-      time_used,
-      is_auto,
-      answer1,
-      answer2,
-      answer3,
-      answer4,
-      answer5
+      id, created_at, employee_code, fname, lname, dept, company,
+      prompt_score, application_score, analysis_score, impact_score,
+      total_score, level, levelEn, time_used, is_auto,
+      answer1, answer2, answer3, answer4, answer5
     FROM results
     ORDER BY id DESC
     LIMIT 2000
   `).all();
 
-  const rows = dedupeLatestByPerson(results || []);
+  const rows = dedupeBestByPerson(results || []);
   const totalParticipants = rows.length;
-  const avgScore = totalParticipants
-    ? round1(rows.reduce((s, r) => s + Number(r.total_score || 0), 0) / totalParticipants)
-    : 0;
+  const avgScore = totalParticipants ? round1(rows.reduce((s, r) => s + Number(r.total_score || 0), 0) / totalParticipants) : 0;
 
   const levelCounts = {
     excellent: rows.filter(r => r.level === "ดีเยี่ยม").length,
@@ -311,26 +300,19 @@ async function handleDashboardSummary(body, env, corsHeaders) {
     answer2: r.answer2 || "",
     answer3: r.answer3 || "",
     answer4: r.answer4 || "",
-    answer5: r.answer5 || ""
+    answer5: r.answer5 || "",
+    attempt_count: r.attempt_count || 1,
+    is_best: 1
   })).sort((a, b) => b.totalScore - a.totalScore).slice(0, 500);
 
   return jsonResponse({
     ok: true,
-    summary: {
-      totalParticipants,
-      avgScore,
-      levelCounts,
-      companyBreakdown,
-      deptBreakdown,
-      ranking
-    }
+    summary: { totalParticipants, avgScore, levelCounts, companyBreakdown, deptBreakdown, ranking }
   }, 200, corsHeaders);
 }
 
 async function handleClearResults(body, env, corsHeaders) {
-  if (!env.DB) {
-    return jsonResponse({ ok: false, error: "Missing D1 binding: DB" }, 500, corsHeaders);
-  }
+  if (!env.DB) return jsonResponse({ ok: false, error: "Missing D1 binding: DB" }, 500, corsHeaders);
 
   const pin = String(body.pin || "").trim();
   const adminPin = String(env.ADMIN_DASHBOARD_PIN || "134300").trim();
@@ -343,17 +325,34 @@ async function handleClearResults(body, env, corsHeaders) {
   return jsonResponse({ ok: true, cleared: true }, 200, corsHeaders);
 }
 
-function dedupeLatestByPerson(rows) {
-  const seen = new Set();
-  const out = [];
+function dedupeBestByPerson(rows) {
+  const map = new Map();
+  const attempts = new Map();
+
   for (const r of rows) {
     const emp = String(r.employee_code || "").trim().toLowerCase();
     const key = emp || `${String(r.fname || "").trim().toLowerCase()}|${String(r.lname || "").trim().toLowerCase()}`;
     if (!key || key === "|") continue;
-    if (!seen.has(key)) {
-      seen.add(key);
-      out.push(r);
+
+    attempts.set(key, (attempts.get(key) || 0) + 1);
+
+    const current = map.get(key);
+    const score = Number(r.total_score || 0);
+    const currentScore = current ? Number(current.total_score || 0) : -1;
+    const id = Number(r.id || 0);
+    const currentId = current ? Number(current.id || 0) : -1;
+
+    if (!current || score > currentScore || (score === currentScore && id > currentId)) {
+      map.set(key, r);
     }
+  }
+
+  const out = Array.from(map.values());
+  for (const r of out) {
+    const emp = String(r.employee_code || "").trim().toLowerCase();
+    const key = emp || `${String(r.fname || "").trim().toLowerCase()}|${String(r.lname || "").trim().toLowerCase()}`;
+    r.attempt_count = attempts.get(key) || 1;
+    r.is_best = 1;
   }
   return out;
 }
@@ -369,11 +368,7 @@ function breakdown(rows, key, outputKey) {
   }
 
   return Object.entries(m)
-    .map(([name, v]) => ({
-      [outputKey]: name,
-      count: v.count,
-      avgScore: round1(v.total / v.count)
-    }))
+    .map(([name, v]) => ({ [outputKey]: name, count: v.count, avgScore: round1(v.total / v.count) }))
     .sort((a, b) => b.avgScore - a.avgScore);
 }
 
@@ -407,11 +402,7 @@ function gradeWithStrictMock(answers) {
   const q4 = gradeQuestion(answers["4"] || "", 20, ["turnover", "ลาออก", "สาเหตุ", "exit interview", "แผนก", "เงินเดือน", "action plan", "แก้ปัญหา"]);
   const q5 = gradeQuestion(answers["5"] || "", 15, ["ประสิทธิภาพ", "ความเสี่ยง", "risk", "pdpa", "privacy", "ข้อมูลส่วนบุคคล", "จริยธรรม", "bias"]);
 
-  const promptScore = q1.score;
-  const applicationScore = q2.score;
-  const analysisScore = q3.score + q4.score;
-  const impactScore = q5.score;
-  const totalScore = promptScore + applicationScore + analysisScore + impactScore;
+  const totalScore = q1.score + q2.score + q3.score + q4.score + q5.score;
   const levelInfo = levelFromScore(totalScore);
 
   return {
@@ -421,10 +412,10 @@ function gradeWithStrictMock(answers) {
     emoji: levelInfo.emoji,
     summary: "ระบบประเมินสำรองถูกใช้ โดยตรวจจากความครบถ้วน ความยาว และคำสำคัญของแต่ละคำตอบ",
     dimensions: {
-      prompt: promptScore,
-      application: applicationScore,
-      analysis: analysisScore,
-      impact: impactScore
+      prompt: q1.score,
+      application: q2.score,
+      analysis: q3.score + q4.score,
+      impact: q5.score
     },
     questions: [
       { num: 1, score: q1.score, maxScore: 25, feedback: q1.feedback },
@@ -442,12 +433,8 @@ function gradeQuestion(answer, max, keywords) {
   const text = String(answer || "").trim().toLowerCase();
   const chars = text.length;
 
-  if (chars <= 3) {
-    return { score: Math.min(max, 1), feedback: "คำตอบสั้นเกินไปมาก ควรอธิบายให้ครบตามโจทย์" };
-  }
-  if (chars <= 15) {
-    return { score: Math.min(max, 3), feedback: "คำตอบยังสั้นมาก ควรเพิ่มรายละเอียดและตัวอย่าง" };
-  }
+  if (chars <= 3) return { score: Math.min(max, 1), feedback: "คำตอบสั้นเกินไปมาก ควรอธิบายให้ครบตามโจทย์" };
+  if (chars <= 15) return { score: Math.min(max, 3), feedback: "คำตอบยังสั้นมาก ควรเพิ่มรายละเอียดและตัวอย่าง" };
 
   let score = 0;
   if (chars >= 40) score += Math.round(max * 0.18);
@@ -455,11 +442,9 @@ function gradeQuestion(answer, max, keywords) {
   if (chars >= 150) score += Math.round(max * 0.14);
 
   let hits = 0;
-  for (const k of keywords) {
-    if (text.includes(k.toLowerCase())) hits += 1;
-  }
-  score += Math.min(Math.round(max * 0.4), hits * Math.max(1, Math.round(max * 0.06)));
+  for (const k of keywords) if (text.includes(k.toLowerCase())) hits += 1;
 
+  score += Math.min(Math.round(max * 0.4), hits * Math.max(1, Math.round(max * 0.06)));
   if (/[1-3๑-๓]|ขั้นตอน|ข้อ|step/.test(text)) score += Math.round(max * 0.1);
   if (/ผลลัพธ์|ประโยชน์|ลดเวลา|เร็วขึ้น|decision|action|impact/.test(text)) score += Math.round(max * 0.1);
 
@@ -495,10 +480,7 @@ function parseJsonFromText(text) {
 function jsonResponse(obj, status, corsHeaders) {
   return new Response(JSON.stringify(obj), {
     status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      ...corsHeaders
-    }
+    headers: { "Content-Type": "application/json; charset=utf-8", ...corsHeaders }
   });
 }
 
